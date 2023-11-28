@@ -1,0 +1,34 @@
+Introdução ao Mongoose
+
+O Mongoose é um ORM para o banco de dados MongoDB.
+Para instalá-lo:
+
+	// npm
+	npm install mongoose
+
+	// yarn
+	yarn add mongoose
+
+Armazene a URI do seu banco de dados MongoDB Atlas no arquivo privado .env como MONGO_URI.
+
+	//.env
+	MONGO_URI='mongodb+srv://<username>:<password>@<clustername>-vlas9.mongodb.net/test?retryWrites=true'
+
+- Substitua <username> pelo nome de usuário do banco.
+- Substitua <password> pela senha do usuário do banco.
+- Por padrão, é passado o nome "test" para indicar à qual collection vamos nos conectar. Substitua-o pelo nome da collection desejada.
+
+Importe o mongoose em seu arquivo app e utilize o método connect para se conectar ao banco de dados:
+
+	// app.js
+	const mongoose = require('mongoose');
+
+	mongoose.connect(process.env.MONGO_URI, {
+	  useNewUrlParser: true,
+	  useUnifiedTopology: true,
+	  useCreateIndex: true
+	});
+
+O objeto passado para o 2º parâmetro de connect é mais para corrigirmos warnings por conta de funcionalidades depreciadas pelas atualizações de versões do Mongo.
+
+

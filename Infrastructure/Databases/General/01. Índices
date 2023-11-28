@@ -1,0 +1,26 @@
+Índices
+
+Os índices são estruturas de dados especiais que armazenam uma pequena porção de um conjunto de dados da collection em uma forma fácil de percorrer. O índice armazena o valor de um atributo específico ou conjunto de atributos.
+Para entendê-los é legal pensar em um livro. Imagine que você procura um capítulo específico, e para acelerar sua busca você irá olhar o índice do livro, encontrará nele o capítulo procurado e irá direto para a página que contém a informação que você busca. Sem o índice você precisaria olhar todas as páginas até achar o capítulo procurado.
+Você pode criar muitos índices em coleções que são lidas frequentemente. Em coleções que tem um volume muito alto de inclusões, os índices precisam ser muito bem pensados porque eles podem afetar negativamente o desempenho da sua aplicação. E se sua collection não tem só leitura ou só escrita, pense bem nos índices que irá criar.
+
+Busca sem Índice
+
+Se não utilizarmos um índice quando fazemos uma query, o banco de dados terá que percorrer cada registro/documento. As tabelas/collections crescem em tamanho e, consequentemente, a query terá que percorrer mais e mais registros/documentos com o passar do tempo.
+
+Busca com Índice
+
+Em vez de percorrer cada registro/documento, a busca pode ocorrer primeiro nos índices ordenados.
+Com o uso dos índices, são armazenados em um tabela/collection pares de chave-valor onde a chave é o valor do atributo que indexamos e o valor é o próprio documento (sua chave primária na tabela principal).
+
+index-scan image here
+
+O MongoDB utiliza a estrutura de dados b-tree para armazenar seus índices.
+
+index-b-tree image here
+
+Índices Compostos
+
+Um índice composto é um índice com dois ou mais atributos.
+
+index-scan-02 image here

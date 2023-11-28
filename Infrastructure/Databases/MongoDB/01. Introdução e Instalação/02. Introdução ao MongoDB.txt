@@ -1,0 +1,23 @@
+Introdução ao MongoDB
+
+MongoDB é um banco de dados que armazena registros de dados (documentos) para uso de uma aplicação. Mongo é um banco de dados não relacional "NoSQL". Isto significa que o Mongo armazena todos os dados associados dentro de um registro, em vez de armazená-los em várias tabelas predefinidas como em um banco de dados SQL. Alguns benefícios deste modelo de armazenamento são:
+
+- Escalabilidade: por padrão, bancos de dados não relacionais são divididos (ou "compartilhados") em vários sistemas, em vez de apenas um. Isto torna mais fácil aumentar o desempenho a um custo menor.
+- Flexibilidade: novos conjuntos de dados e propriedades podem ser adicionados a um documento sem a necessidade de fazer uma nova tabela para os dados.
+- Replicação: cópias do banco de dados rodam em paralelo, então se uma cair, uma das cópias se torna a nova fonte de dados primária.
+
+Embora existam muitos bancos de dados não relacionais, o uso do JSON pelo Mongo como sua estrutura de armazenamento de documento o torna uma escolha lógica ao aprender Javascript para back-end. Acessar documentos e suas propriedades é como acessar objetos no Javascript.
+Mongoose.js é um módulo do NPM para Node.js que lhe permite escrever objetos para o Mongo assim como você faria no Javascript. Isto pode facilitar a construção de documentos para armazenamento no Mongo.
+
+Quando devo usar MongoDB?
+
+Dados desestruturados são um problema para a imensa maioria dos bancos de dados relacionais, mas não tanto para o MongoDB. Quando seu schema é variável, é livre, usar MongoDB vem muito bem a calhar. Os documentos BSON (JSON binário) do Mongo são schemaless e aceitam quase qualquer coisa que você quiser armazenar, sendo um mecanismo de persistência perfeito para uso com tecnologias que trabalham com JSON nativamente, como JavaScript (e consequentemente Node.js).
+
+bson-document-image-here
+
+Cenários altamente recomendados e utilizados atualmente são catálogos de produtos de e-commerces. Telas de detalhes de produto em e-commerces são extremamente complicadas devido a diversidade de informações aliada às milhares de variações de características entre os produtos que acabam resultando em dezenas de tabelas se aplicado sobre o modelo relacional.
+
+Quando não devo usar MongoDB?
+
+Você não deve utilizar MongoDB quando relacionamentos entre diversas entidades são importantes para o seu sistema. Se for ter de usar muitas "chaves estrangeiras" e "JOINs", você está usando do jeito errado, ou, ao menos, não do jeito mais indicado.
+

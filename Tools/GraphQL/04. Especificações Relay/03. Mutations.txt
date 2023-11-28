@@ -1,0 +1,130 @@
+Mutations
+
+O Relay utiliza um padrão comum para mutations, onde existem campos root na mutation type com um único argumento, input, e onde a entrada e a saída ambas contem um identificador da mutation do cliente utilizado para reconciliar requisições e respostas.
+Por convenção, as mutations são nomeadas como verbos, seus inputs são o nome com "Input" anexado no fim, e retornam um objeto que é o nome com "Payload" anexado.
+
+Exemplo
+
+Temos uma mutation introduceShip, então criamos dois types: IntroduceShipInput e IntroduceShipPayload:
+
+    input IntrocueShipInput {
+        factionId: ID!
+        shipName: String!
+    }
+
+    type IntroduceShipPayload {
+        faction: Faction
+        ship: Ship
+    }
+
+Com este input e payload, podemos emitir a seguinte mutation:
+
+    mutation {
+        introduceShip(input: IntroduceShipInput!) {
+            ship {
+                id
+                name
+            }
+            faction {
+                name
+            }
+        }
+    }
+
+Com estes parâmetros:
+
+    {
+        "input": {
+            "shipName: "B-Wind",
+            "factionId": "1"
+        }
+    }
+
+E teremos este resultado:
+
+    {
+        "introduceShip": {
+            "ship": {
+                "id": "U2hpcDo5",
+                "name": "B-Wing"
+            },
+            "faction": {
+                "name": {
+                    "Alliance to Restore the Republic
+                }
+            }
+        }
+    }
+
+Implementando Mutations na prática
+
+Para construirmos as mutations, graphql-relay nos fornece uma função helper chamada mutationWithClientMutationId.
+A função mutationWithClientMutationId recebe como argumento um objeto com as propriedades: name, inputFields, outputFields e mutateAndGetPayload que utilizaremos para configurar nossa mutation:
+
+- name recebe uma string com o nome da mutation.
+- inputFields recebe um objeto onde cada propriedade representará um argumento do input da mutation. Todas as mutations no Relay recebem um único campo input que é um objeto envolvendo todos os argumentos recebidos.
+- mutateAndGetPayload recebe uma função, onde essa função receberá como argumento o objeto de input recebido pela mutation e devolverá a resposta esperada pela mutation. É nessa função onde de fato implementamos a lógica da mutation, como armazenar um dado no banco por exemplo.
+- outputFields recebe um objeto onde cada propriedade representará o campo do objeto que queremos devolver para a query. Cada propriedade dessa também receberá um objeto com as propriedades type e resolve. Para a propriedade type passamos o type que esse campo terá e para resolve passamos uma função onde podemos formatar o valor que esse campo irá expôr. Cada função resolve receberá como argumento o objeto payload devolvido pela função mutateAndGetPayload.
+
+    // src/graphql/mutations/UserMutation.ts
+    import { GraphQLNonNull, GraphQLString } from 'graphql';
+    import { mutationWithClientMutationId } from 'graphql-relay';
+
+    import User from '../../app/models/User';
+    import UserType from '../../graphql/types/UserType.ts';
+
+    interface CreateUser {
+        email: string;
+        password: string;
+        birth: string;
+    }
+
+    export const createUserMutation = mutationWithClientMutationId({
+        name: 'CreateUser',
+        inputFields: {
+            email: {
+                type: GraphQLNonNull(GraphQLString)
+            },
+            password: {
+                type: GraphQLNonNull
+            }
+        },
+        mutateAndGetPayload: async (args: CreateUserArgs) => {
+            const { email, password, birth } = args;
+
+            const newUser = new User({ email, password, birth });
+
+            return newUser.save();
+        },
+        outputFields: {
+            createdUser: {
+                type: UserType,
+                resolve: (payload) => ({
+                    ...payload,
+                    birth: new Date(birth).toISOString()
+                })
+            }
+        }
+    });
+
+No exemplo acima criamos uma mutation para criar usuários em nosso sistema: 
+
+- Criamos uma interface CreateUser para representar nosso objeto de input.
+- Demos o nome CreateUser para essa mutation.
+- Criamos nossos campos de input em inputFields.
+- Definimos a lógica de criação do usuário na função passada para mutateAndGetPayload.
+- Criamos o campo createUser em outputFields que será o campo devolvido por essa mutation.
+
+Agora, precisamos passar essa mutation para seu respectivo campo na mutation root:
+
+    // src/graphql/types/MutationType.ts
+    import { GraphQLObjectType } from 'graphql';
+
+    import { createUser } from '../mutations/UserMutation';
+
+    export default new GraphQLObjectType({
+        name: 'RootMutation',
+        fields: () => ({
+            createUser
+        })
+    });

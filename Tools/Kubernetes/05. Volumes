@@ -1,0 +1,7 @@
+Volumes
+
+Vamos ver agora como funciona o armazenamento de dados no Kubernetes.
+O Kubernetes, por padrão, não anexa nenhum tipo de armazenamento aos Pods. Sendo assim, qualquer dado gerado pelas aplicações dentro de um Pod será perdido caso o Pod seja derrubado ou reiniciado. Para que possamos persistir os dados gerados pelos Pods, o Kubernetes disponibiliza um componente chamado Volume.
+Um Volume é um diretório no node (máquina física) ou diretório externo (na nuvem por exemplo) onde podemos armazenar os dados gerados pelos Pods. O Kubernetes anexa esse volume ao Pod no momento de sua inicialização.
+
+kubernetes-volume image here

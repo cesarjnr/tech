@@ -1,0 +1,27 @@
+Commands
+
+- pwd
+
+Imprime o caminho do diretório atual no console.
+
+	pwd
+
+- cp
+
+Copia um arquivo de um diretório para outro
+
+	cp  -avr from to
+
+-a: Preserva os atributos especificados tais como diretório, dono, timestamps, etc.
+-v : Saída verbosa.
+-r : Copia os diretórios de forma recursiva
+
+- xdg-open
+
+Abre um arquivo com a aplicação padrão dele.
+
+	xdg-open file
+
+- dmidecode | less
+
+Informações sobre a BIOS.

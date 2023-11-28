@@ -1,0 +1,34 @@
+Conectando-se à Internet pelo Terminal
+
+1º: Verificar o modelo da sua placa de rede. Execute o seguinte comando:
+
+	ip link
+
+Deve ser impressa uma saída similar a essa em seu terminal:
+
+	1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+	    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+	2: enp7s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+	    link/ether 04:d9:f5:0a:1a:8e brd ff:ff:ff:ff:ff:ff
+	3: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN mode DEFAULT group default 
+	    link/ether 02:42:02:93:9a:54 brd ff:ff:ff:ff:ff:ff
+
+No exemplo acima, minha placa de rede é o modelo enp7s0.
+
+2º: Configurar o arquivo /etc/network/interfaces para fazer com que o gerenciador de redes configure sua internet assim como um DHCP de forma automática. Abra esse arquivo com seu editor de textos favoritos:
+
+	sudo nano /etc/network/interfaces
+
+Em meu computador, o arquivo aparece dessa maneira:
+
+	auto lo
+	iface lo inet loopback
+
+Configuro-o para:
+
+	auto enp7s0
+	iface enp7s0 inet dhcp
+
+3º: Restarte o gerenciador de redes com o seguinte comando:
+
+	sudo /etc/init.d/networking restart

@@ -1,0 +1,27 @@
+Modules
+
+FetchContent
+
+FetchContent is a module that enable populating content at configure time (when running cmake command).
+Content population details sould be defined separately from the command that performs the actual operation. This ensures that all dependency details are defined before anything might try to use them to populate content.
+The following shows a typical example of declaring content details for a dependency:
+
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+  )
+
+We pass a name for the dependency and its git path. We could also pass a URL for download:
+
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+  )
+
+To ensure the dependencies were populated and potentially added to the build we can use the MakeAvailable command:
+
+  FetchContent_MakeAvailable(googletest)
+
+We can pass more than one dependency at once:
+
+  FetchContent_MakeAvailable(first_dependency second_dependency third_dependency)

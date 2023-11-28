@@ -1,0 +1,94 @@
+CRUD
+
+As operações de CRUD são simples de serem executadas com o Mongoose.
+
+Read
+
+Para buscar todos os dados existentes em uma collection utilizamos o método find() do model.
+
+	// src/app/services/DevService.js
+	const Dev = require('../models/Dev');
+
+	class DevService {
+	  async index() {
+	    return await Dev.find();
+	  }
+	}
+
+	module.exports = DevService;
+
+Create
+
+Para persistir dados no banco utilizamos o método create() do model, passando como argumento um objeto com os dados que queremos persistir.
+Utilizando como exemplo o model Dev que criamos no tópico passado:
+
+	// src/app/services/DevService.js
+	const Dev = require('../models/Dev');
+
+	class DevService {
+	  async create(data) {
+	    return await Dev.create(data);
+	  }
+	}
+
+	module.exports = DevService;
+
+Filtros no Método find()
+
+O método find não se restringe somente a retornar todos os recursos de uma collection. Podemos utilizar queries para filtrar esses recursos. Para isso, passamos um objeto como argumento para ele:
+
+	// GET REQUEST QUERY PARAMS
+	http://localhost:3333/devs?latitude=-22.7856374&longitude=-43.281157&techs=ReactJS, React Native, Node.js
+
+	// src/app/controllers/DevController.js
+	const DevService = require('../services/DevService.js');
+
+	class DevController {
+	  async index(req, res) {
+	    const techsArray = req.query.techs.split(',').map(tech => tech.trim());
+
+	    const devs = await new DevService().index({ latitude, longitude, techsArray });
+
+	    return res.json(devs);
+	  }
+	}
+
+	// src/app/services/DevService.js
+	const Dev = require('../models/Dev');
+
+	class DevService {
+	  async index(params) {
+	    const { latitude, longitude, techsArray } = params;
+
+	    return await Dev.find({
+	      techs: {
+	        $in: techsArray
+	      },
+	      location: {
+		$near: {
+		  $geometry: {
+		    type: 'Point',
+		    coordinates: [longitude, latitude]
+		  },
+		  $maxDistance: 10000
+		}
+	      }
+	    });
+	  }
+	}
+
+	module.exports = DevService;
+
+Explicação dos códigos acima:
+
+- Estamos simulando uma requisição passando os parâmetros latitude, longitude e techs através de query params.
+- Em DevController, transformamos o valor do parâmetro techs - que vem em forma de string - em um array e passamos um objeto contendo esses parâmetros para o método index() de DevService.
+- Em DevService, no método find(), estamos passando como argumento um objeto. Esse objeto deve conter os campos que você deseja aplicar o(s) filtro(s).
+- No campo techs, utilizamos o operador $in do Mongo que recebe um array de valores os quais serão utilizados na filtragem. Em nosso exemplo, estamos fazendo uma busca onde o campo tech dos recursos deve conter pelo menos um dos valores contidos em techsArray ('ReactJS', 'React Native' e 'Node.js').
+- No campo location, utilizamos o operador $near que já é nativo do Mongo para trabalharmos com geolocalização. O operador $near recebe um objeto com o operador $geometry e os operadores $maxDistance e/ou $minDistance.
+- O operador $geometry recebe um objeto com as propriedades type e coordinates.
+- type recebe uma string indicando o tipo de objeto GeoJSON e nesse caso estamos utilizando o Point (latitude e longitude).
+- coordinates recebe um array com os valores de longitude e latitude, nessa ordem.
+- O operador $maxDistance recebe um número e a unidade de medida é determinada pelo sistema de coordenadas que está sendo utilizado. Como estamos utilizando GeoJSON, será utilizada a medidade de metros para esse valor. No exemplo acima estamos passando 10000 metros (10 km).
+
+A query acima será significa, basicamente: Busque todos os devs que possuam pelo menos uma das tecnologias contidas em techsArray ('ReactJS', 'React Native', 'Node.js') e que estejam a no máximo 10km de distância do ponto em que a latidude é -22.7856374 e a longitude é -43.281157.

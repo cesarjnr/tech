@@ -1,0 +1,104 @@
+- Injetar o model como dependência do service.
+
+- Criar um arquivo index dentro do diretório services, que ficará responsável por instanciar e injetar as dependências em cada um dos services.
+
+- O que será exportado do arquivo index será a instância de cada service com a dependência injetada.
+
+- Nos controllers, importar o arquivo index e não os services propriamente ditos.
+
+Ex.:
+
+    // services/UserService.js
+    class UserService {
+        constructor(UserModel) {
+            this.User = UserModel;
+        }
+
+        async index() {
+            const users = await this.User.find();
+
+            return users;
+        }
+    }
+
+    module.exports = UserService;
+
+    // services/index.js
+    const User = require('../models/User');
+    const UserService = require('./UserService');
+
+    const userService = new UserService(User);
+
+    module.exports = {
+        userService
+    };
+
+    // controllers/UserController.js
+    const { userService } = require('../services');
+
+    class UserController {
+        async index() {
+            const users = userService.index();
+
+            return res.json(users);
+        }
+    }
+
+    module.exports = UserController;
+
+- Transferir a conexão com o banco de dados para o arquvio server.js pois caso a conexão seja feita no arquivo app.js, quando formos importá-lo em nossos ambiente de testes, estaremos utilizando o próprio banco da nossa aplicação. O arquivo server.js não é executado quando os testes são disparados, então temos a habilidade de nos conectarmos a um banco diferente dentro dos nossos ambientes de testes.
+
+- Realizar testes de integração nos models, nos services e por fim em todo o fluxo da requisição.
+
+    // user_model_test.js
+    const mongoose = require('mongoose');
+    const User = require('../../app/models/User);
+
+    const mongoDB = 'mongodb://127.0.0.1/test_database';
+    mongoose.connect(mongoDB);
+
+    describe('User model test', () => {
+        beforeAll(async () => await User.remove());
+        afterEach(async () => await User.remove());
+        afterAll(async () => await mongoose.connection.close())
+
+        it('should get a user', async () => {
+            await User.create({ name: 'César', email: 'cesar.jnr@hotmail.com' });
+
+            const user = await User.findOne({ name: 'César' });
+
+            expect(user.name).toBe('César');
+        });
+
+        it('should create a user', async () => {
+            const userData = {
+                name: 'César',
+                email: 'cesar.jnr@hotmail.com'
+            };
+
+            const user = await User.create(userData);
+
+            expect(user.name).toBe(userData.name);
+        });
+
+        it('should update a user', async () => {
+            const user = await User.create({ name: 'César', email: 'cesar.jnr@hotmail.com' });
+
+            const dataToUpdate = { email: 'cesarjr.pro@gmail.com' };
+
+            const updatedUser = await User.findByIdAndUpdate(user.id, dataToUpdate);
+
+            expect(updatedUser.id).toBe(user.id);
+            expect(updatedUser.email).toBe(dataToUpdate.email);
+        });
+
+        it('should delete an user', async () => {
+            const user = await User.create({ name: 'César', email: 'cesar.jnr@hotmail.com' });
+
+            await User.findByIdAndRemove(user.id);
+
+            const users = await User.find();
+
+            expect(user.length).toBe(0);
+        });
+    });

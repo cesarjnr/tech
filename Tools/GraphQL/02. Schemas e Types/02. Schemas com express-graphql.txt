@@ -1,0 +1,41 @@
+Schemas com express-graphql
+
+Neste tópico veremos como criar um schema utilizando as libs express-graphql e graphql.
+Para definirmos os schemas, precisamos instalar a lib graphql:
+
+	yarn add graphql express-graphql
+
+A função buildSchema() recebe uma string com o formato de um objeto, contendo a definição do nosso schema e retorna um objeto do tipo GraphQLSchema.
+
+	const graphqlHttp = require('express-graphql');
+	const { buildSchema } = require('graphql');
+
+	graphqlHttp({
+	  schema: buildSchema(`
+	    type RootQuery {
+	      events: [String!]!
+	    }
+
+	    type RootMutation {
+	      createEvent(name: String): String
+	    }
+	
+	    schema {
+	      query: RootQuery
+	      mutation: RootMutation
+	    }
+	  `)
+	});
+
+- Importamos a função graphqlHttp de express-graphql e buildSchema de graphql.
+- A função graphqlHttp é uma função middleware, então a invocamos no método use() do express para definirmos esse middleware.
+- A função graphqlHttp recebe como argumento um objeto onde definiremos as configurações do nosso servidor GraphQL.
+- A propriedade schema recebe uma instância de GraphQLSchema que é basicamente um parse da nossa string de schema.
+- Conseguimos essa instância utilizando a função buildSchema() da lib graphql.
+- type RootQuery é onde definiremos a estrutura dos entry points das queries de consulta que receberemos.
+- A propriedade events retornará um array de strings, onde tanto o array quanto os elementos do array serão não-nulos. Lembrando sempre que o array poderá vir vazio.
+- type RootMutation é onde definiremos a estrutura dos entry points das queries de modificação que receberemos.
+- A propriedade createEvent recebe um argumento do tipo string e retorna um valor do tipo string.
+- A propriedade schema é a chave que envolverá todo nosso schema.
+- A propriedade query apontará para o type RootQuery.
+- A propriedade mutation apontará para o type RootMutation.

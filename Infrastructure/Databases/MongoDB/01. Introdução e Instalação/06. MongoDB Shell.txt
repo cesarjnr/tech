@@ -1,0 +1,10 @@
+MongoDB Shell
+
+- Criando um Banco de Dados
+
+Para criar um banco de dados você pode primeiro inserir dados nesse banco. Para isso, você pode selecionar o banco de dados não-existente e performar a seguinte operação:
+
+	use myNewDB
+	db.myNewCollection1.insertOne({ x: 1 })
+	
+A operaçao insertOne cria tanto o banco de dados myNewDB quanto a collection myNewCollection1 se ambas não existirem.

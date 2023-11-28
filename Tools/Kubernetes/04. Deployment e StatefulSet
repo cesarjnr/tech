@@ -1,0 +1,31 @@
+Deployment e StatefulSets
+
+
+Deployment
+
+Imaginemos que tenhamos então uma aplicação rodando dentro do Kubernetes com as devidas configurações básicas.
+O que aconteceria se o Pod da aplicação parasse ou precisássemos reiniciá-lo por conta de alguma mudança em que precisamos fazer um novo build da imagem?
+
+kubernetes-deployment image here
+
+Basicamente, haveria um momento em que a aplicação não poderia ser acessada pelos usuários o que obviamente não seria uma coisa boa com a aplicação rodando em produção.
+Essa é uma das vantagens de termos sistemas distribuídos e o uso de contêineres. Em vez de dependermos apenas de uma instância de nossa aplicação ou de uma instância do banco de dados, nós replicamos todas elas em diversos servidores.
+
+kubernetes-deployment-02 image here
+
+Independente do Node em que os Pods estiverem replicado, todos eles estarão anexados ao mesmo Service.
+Além de garantir um IP estático para todos os Pods, o Service também atua como Load Balancer. Isso significa que o Service irá capturar a requisição e a redirecionará para qualquer um dos Pods que estiver menos ocupado.
+Para criarmos réplicas de um Pod nós não criamos novos Pods. Em vez disso, definimos um template para um Pod e especificamos quantas réplicas desse Pod gostaríamos que o Kubernetes rodasse. Esse componente onde utilizamos templates para a criação de réplicas de um Pod é chamado de Deployment dentro do Kubernetes. Podemos dizer que os Deployments são abstrações em cima dos Pods que por sua vez são abstrações em cima dos contêineres.
+Então, caso um dos Pods fosse derrubado, a aplicação ainda estaria acessível para o usuário já que o Service faria o trabalho de redirecionar a requisição para outra réplica desse Pod que está em funcionamento:
+
+kubernetes-deployment-03 image here
+
+StatefulSets
+
+Quando falamos em replicar aplicações que possuam estado precisamos de uma sequência bem definida de passos para garantir a sincronização desse estado entre todas as réplicas. Bancos de dados são aplicações que possuem estado.
+Para construirmos réplicas de um banco de dados MySQL por exemplo, utilizamos o conceito de master e slave. Cada instância slave, ao ser inicializada, faz uma cópia dos dados da última instância slave que foi inicializada. Após elas estarem rodadndo, todas se comunicam com a instância master para que a replicação possa ocorrer, visto que as operações SQL ocorrem na instância master.
+Dadas as implicações da replicação apresentada acima, temos que atender dois requisitos principais para que a replicação ocorra da maneira correta: uma sequência bem definida de inicialização de cada instância e uma maneira de identificar cada uma dessas instâncias.
+Com o componente Deployment não é possível atendermos esses requisitos visto que os Pods são inicializados todos ao mesmo tempo e, a cada inicialização, o Pod recebe um novo nome.
+O componente StatefulSet faz exatamente a mesma coisa do Deployment (gerenciar réplicas) com a diferença de que ele cumpre esses requisitos necessárias para a replicação de aplicações que possuem estado. Ou seja, ele inicializa um Pod de cada vez e indexa cada um desses Pods, começando no índice 0. Ele utiliza esse índice para gerar nomes fixos para cada Pod. Por exemplo, o primeiro Pod a ser inicializado, que seria o Pod rodando a instância master do banco, vai ter o índice 0 e esse índice será anexado a um nome fixo que poderemos definir, como mysql-0 por exemplo. Dessa maneira, o próximo Pod contendo a primeira instância slave receberá o índice 1 e o nome mysql-1. O terceiro Pod contendo outra instância slave terá o índice 2 e o nome mysql-2. Sendo assim, conseguimos fazer com que o slave no Pod de nome mysql-2 consiga copiar os dados do slave no Pod de nome mysql-1 e depois sincronizar com a instância master no Pod de nome mysql-0.
+
+kubernetes-statefulset image here

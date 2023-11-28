@@ -1,0 +1,39 @@
+Git Merge
+
+O comando git merge mesclará quaisquer alterações que foram feitas na codebase em uma branch separada com a sua branch atual, como um novo commit.
+A sintaxe do comando é a seguinte:
+
+    git merge BRANCH-NAME
+
+Por exemplo, se você está atualmente trabalhando em uma branch chamada feature e gostaria de mesclar quaisquer novas alterações que foram feitas na branch master:
+
+    git-merge imagere here
+
+Você emitiria o seguinte comando:
+
+    git merge master
+
+O resultado disso é a criação de um novo commit do próprio merge, unindo os históricos das duas branches. Então agora temos uma estrutura como essa:
+
+    git-merge-2 image here
+
+O merge é interessante porque é uma operação não destrutiva. Os commits dos branches existentes não são alterados e isso evita alguns riscos do Rebase.
+Por outro lado, também significa que o branch feature terá um um commit irrelevante todas as vezes que você precisar incorporar mudanças. Se o branch principal tem muita atividade, isso vai poluir bastante o branch no qual está trabalhando e isso gera impacto direto aos outros desenvolvedores, que não vão conseguir entender o histórico do projeto.
+
+Observação: Se houver quaisquer alterações não commitadas na sua branch atual, o Git não lhe permitirá realizar a mesclagem até que todas as alterações na sua branch atual tenham sido commitadas. Para lidar com essas alterações, você pode:
+
+- Criar uma nova branch e commitar as alterações:
+
+    git checkout -b new-branch-name
+    git add .
+    git commit -m "your commit message"
+
+- Guardá-las:
+
+    git stash
+    git merge new-features
+    git stash pop
+
+- Abandonar todas as alterações:
+
+    git reset --hard

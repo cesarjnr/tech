@@ -1,0 +1,122 @@
+Schemas e Types
+
+Types
+
+Como vimos em tópicos anteriores, sabemos que a linguagem de query GraphQL é basicamente sobre selecionar campos em objetos. Então, por exemplo, a seguinte query:
+
+	{
+	  hero {
+	    name
+	    appearsIn
+	  }
+	}
+
+Retornaria o seguinte objeto:
+
+	{
+	  "data": {
+	    "hero": {
+	      "name": "R2-D2",
+	      "appearsIn": [
+	        "NEWHOPE",
+	        "EMPIRE",
+		"JEDI"
+	      ]
+	    }
+	  } 
+	}
+
+Por conta da forma de uma query GraphQL corresponde, de forma aproximada, ao objeto retornado, você consegue prever o que a query retornará sem saber muito sobre o servidor. Mas é útil ter uma descrição exata dos dados que podemos pedir - quais campos podemos selecionar? Quais tipos de objetos eles podem retornar? Quais campos estão disponíveis nesses sub-objetos? E é aí que entra o schema.
+Todo serviço GraphQL define um conjunto de tipos que descrevem completamente o conjunto de dados possíveis que você pode consultar naquele serviço. Então, quando as queries chegam, elas são validadas e executadas mediante esse schema.
+O schema pode ser entendido como um contrato que especifica quais tipos de dados uma consulta pode pedir e quais tipos de dados um resolver pode retornar.
+
+Tipos e Campos do Objeto
+
+Os componentes mais básicos de um schema do GraphQL são os tipos do objeto, que apenas representam um tipo de objeto que você pode buscar do seu serviço, e quais campos ele tem. No linguagem de schema do GraphQL, podemos representar isso dessa maneira:
+
+	type Character {
+	  name: String!
+	  appearsIn: [Episode!]!
+	}
+
+- Character é um tipo de objeto do GraphQL, significando que é um tipo com alguns campos. A maioria dos tipos em seu schema serão tipos de objeto.
+- name e appearsIn são campos no tipo Character. Isso significa que name e appearsIn são os únicos campos que podem aparecer em qualquer parte de uma query GraphQL que opera no tipo Character.
+- String é um dos tipos escalares embutidos - estes tipos são resolvidos para um único objeto escalar, e não podem ter sub-seleções na query. Veremos sobre os tipos escalares mais para frente.
+- string! significa que o campo é não-nulo, significando que o serviço GraphQL promete sempre lhe dar um valor quando você consultar este campo. Na linguagem de tipos, representaremos esses campos com um ponto de exclamação (!).
+- [Episode!]! representa um array de objetos Episode. Já que ele também é não-nulo, você pode esperar sempre um array (com zero ou mais itens) quando você consultar o campo appearsIn. E já que Episode! também é não-nulo, você pode esperar sempre que cada item do array seja um objeto Episode.
+
+Argumentos
+
+Todo campo em um tipo de objeto do GraphQL pode ter zero ou mais argumentos, por exemplo o campo length abaixo:
+
+	type Starship {
+	  id: ID!
+	  name: String!
+	  length(unit: LengthUnit = METER): Float
+	}
+
+Todos os argumentos são nomeados. Ao contrário de linguagens como Javascript e Python onde funções recebem uma lista de argumentos ordenados, todos os argumentos no GraphQL são passados pelo nome especificamente. Neste caso, o campo length tem um argumento definido, unit.
+Argumetos podem ser obrigatórios ou opcionais. Quando um argumento é opcional, podemos definir um valor padrão - se o argumento unit não for passado, ele será definido para METER por padrão.
+
+Observação: O tipo ID é embutido no GraphQL e diz a ele que este campo será um identificador único.
+
+O Tipo Input
+
+O tipo input é um tipo especial no GraphQL que podemos utilizar para os argumentos dos campos.
+Em vez de definirmos os argumentos um a um para no campo, podemos definir um único argumento tipando-o com um tipo definido pela palavra-chave input.
+
+	input LengthInput {
+	  unit: LengthUnit || METER
+	}
+
+	type Starship {
+	  id: ID!
+	  name: String!
+	  length(lengthInput: LengthInput): Float
+	}
+
+No exemplo acima, poderíamos ter mais campos no tipo LenghInput e teríamos acesso a todos eles no argumento lengthInput do campo length.
+
+Os Tipos Query e Mutation
+
+A maioria dos tipos no seu schema serão apenas tipos de objetos normais mas existem dois tipos que são especiais dentro de um schema:
+
+	schema {
+	  query: Query
+	  mutation: Mutation
+	}
+
+Todo serviço GraphQL tem um tipo query e pode ou não ter um tipo mutation. Estes tipos são o mesmo que um tipo de objeto normal, mas eles são especiais porque definem os entry points de toda query GraphQL. Então, se você ver uma query parecida com essa:
+
+	query {
+	  hero {
+	    name
+	  }
+	  droid(id: "2000") {
+	    name
+	  }
+	}
+
+Que produzirá este resultado:
+
+	{
+	  "data": {
+	    "hero": {
+	      "name": "R2-D2"
+	    },
+	    "droid": {
+	      "name": "C-3PO"
+	    }
+	  }
+	}
+
+Isso significa que o serviço GraphQL precisa ter um tipo Query com os campos hero e droid:
+
+	type Query {
+	  hero(episode: Episode): Character
+	  droid(id: ID!): Droid
+	}
+
+Então, é basicamente como se hero e droid fossem "rotas" em uma API Rest e essas rotas ficam agrupadas em um tipo.
+
+Mutations funcionam de maneira similar - você define campos no tipo Mutation, e eles ficam disponíveis como os campos mutation root que você pode chamar na sua query. Normalmente, os nomes dos campos do tipo Mutation representarão nomes de funções.

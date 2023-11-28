@@ -1,0 +1,63 @@
+MongoDB Atlas
+
+O MongoDB Atlas é uma plataforma de banco de dados como serviço do MongoDB, que basicamente significa que eles configuram e hospedam o banco de dados para você, fazendo com que a única responsabilidade que você tenha seja popular seu banco de dados com o que importa: dados! Vamos ver como:
+
+- Criar uma conta do MongoDB Atlas.
+- Criar um novo cluster.
+- Criar um novo usuário no banco de dados.
+- Colocar seu endereço de IP na lista de permissões.
+- Conectar-se ao seu cluster.
+
+Criando uma Conta do MongoDB Atlas
+
+Vamos começar acessando: https://www.mongodb.com/cloud/atlas.
+
+Depois de abrir a página do MongoDB Atlas, você deve se cadastro para uma nova conta.
+
+- Clique no botão "Sign In" no canto superior direito para abrir a página de cadastro.
+- Clique no link "Register for a new account" na parte inferior da página de login.
+- Preencha o formulário de cadastro com as suas informações e pressione "continue".
+- Você deve agora estar logado em sua nova conta e ver um modal com um botão verde "Build my first cluster", clique nele.
+
+Criando um Novo Cluster
+
+- Siga as etapas para criar seu primeiro cluster seguindo as instruções que eles fornecem e clicando em next após cada passo.
+
+	- Escolha seu provedor de nuvem e região, você pode deixar isto como o padrão fornecido (normalmente AWS).
+	- Personalize as especificações do seu cluster, você também pode deixar isto como o padrão fornecido, M0 Sandbox (Shared RAM, 512 MB Storage) Encrypted.
+	- Dê um nome ao seu cluster, você também pode deixar isto como o padrão fornecido, Cluster 0.
+
+- Agora clique no botão verde "Create Cluster" na parte inferior da tela e verifique as legendas da imagem que eles fornecem.
+- Você agora deve ver a mensagem "Your cluster is being created - New clusters take between 7-10 minutes to provision". Espere até que o cluster seja criado antes de ir para o próximo passo.
+
+Criando um Novo Usuário no Banco de Dados
+
+- Você deve conseguir ver o botão verde "Get Started" na parte inferior esquerda da sua tela, você pode clicar neste botão para ver em qual passo do processo você está, se você clicar nele agora, você pode ver que o próximo passo é criar seu primeiro usuário de banco de dados (Create your first database user), vá em frente e clique nessa etapa.
+
+	- Siga as instruções clicando na aba "Security".
+	- Clique no botão verde "ADD NEW USER".
+	- Insira um nome de usuário e uma senha e depois selecione "Read or write to any database" com privilégios de usuário.
+	- Clique no botão verde "ADD USER" no canto inferior direito do modal.
+
+Nota: Você pode sempre atualizar seus privilégios para o nível "Admin", no entanto, é recomendável dar permissões a um usuário conforme necessário, por motivos de segurança.
+
+Colocando seu Endereço de IP na Lista de Permissões
+
+- Se você clicar agora no botão verde "Get Started" no canto inferior esquerdo da sua tela, você deve ver o próximo passo destacado, "Whitelist your IP address", clique nele.
+
+	- Siga as instruções clicando na aba "IP Whitelist" abaixo da aba "Security".
+	- Clique no botão verde "ADD IP ADDRESS".
+	- No modal, clique no botão "ALLOW ACCESS FROM ANYWHERE", e você deverá ver 0.0.0.0/0 pré-preenchido para o campo de entrada da lista de permissões, clique no botão verde "Confirm".
+
+Obs.: Quando a aplicação estiver em produção, insira apenas o IP da sua máquina em dez 0.0.0.0, para que o banco possa ser acessado somente por lá.
+
+Conectando-se ao Seu Cluster
+
+- Clicar no botão verde "Get Started" na parte inferior esquerda da sua tela agora deve lhe mostrar a etapa final, "Connect to your cluster", clique nele.
+
+	- Siga as instruções clicando no botão "Connect" na seção "Sandbox".
+	- No modal do pop-up, clique em "Connect Your Application", uma string de conexão será exibida, você pode copiar essa string de conexão clicando no botão "copy".
+	- Esta será a URL final que você usará para se conectar ao seu banco de dados, será algo parecido com isto "mongodb+srv://<user>:<password>@<cluster#-dbname>.mongodb.net/test?retryWrites=true", perceba que os campos "user" e "cluster#-dbname" já estão preenchidos para você, tudo que você precisaria substituir é o campo "password" com a que você criou na etapa anterior.
+
+- É isso! Agora você tem a URI que você adicionará a sua aplicação para se conectar ao seu banco de dados.
+- Sinta-se livre para criar bancos de dados separados para diferentes aplicações se elas precisarem de um banco de dados separados. Você só precisa criar um novo projeto na sua conta do MongoDB Atlas, criar um novo cluster, adicionar um novo usuário, colocar seus endereços de IP na lista de permissões e por fim se conectar ao seu cluster para obter a nova URI.

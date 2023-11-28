@@ -1,0 +1,120 @@
+Relacionamentos
+
+Definindo os Relacionamentos
+
+Definimos os relacionamentos entre collections no Mongoose no mesmo objeto que definimos nosso schema.
+Vamos utilizar como exemplo um usuário que pode criar vários posts, então teremos as collections user e post.
+
+	// src/app/models/Post.js
+	const { Schema, model } = require('mongoose');
+
+	const PostSchema = new Schema({
+	  title: {
+	    type: String,
+	    required: true
+	  },
+	  content: {
+	    type: String,
+	    required: true
+	  },
+	  author: {
+	    type: Schema.Types.ObjectId,
+	    ref: 'User'
+	  }
+	});
+	
+	model('Post', PostSchema);
+	
+
+	// src/app/models/User.js
+	const { Schema, model } = require('mongoose');
+
+	const UserSchema = new Schema({
+	  email: {
+	    type: String,
+	    required: true
+	  },
+	  password: {
+	    type: String,
+	    required: true
+	  },
+	  createdPosts: [
+	    {
+	      type: Schema.Types.ObjectId,
+	      ref: 'Post'
+	    }
+	  ]
+	});
+
+	model('User', UserSchema);
+
+Explicação do código acima:
+
+- Criamos dois models: Post e User.
+- Na criação do schema do model Post, repare que adicionamos a chave author. Essa chave ficará responsável por definir a relação que o model atual terá com outro model. No exemplo acima, definiremos a relação que o model Post terá com o model User. O nome dessa chave pode ser qualquer nome que você desejar.
+- Como teremos apenas um usuário associado a um único post, passamos um objeto para essa chave. Dentro desse objeto definiremos as configurações desse relacionamento.
+- Utilizamos a chave type para definirmos o tipo de dado que será retornado nessa chave. No exemplo acima, utilizamos o tipo ObjectId fornecido pelo mongoose que é o tipo utilizado no campo _id pelo MongoDB. Basicamente, será retornado o id de determinado usuário.
+- Utilizamos a chave ref para definir qual será o model associado ao model atual. Devemos utilizar o nome do model e não do schema. No exemplo acima, estamos definindo que a relação será feita com o model User.
+- Em UserSchema, a definição da relação funciona da mesma maneira. A diferença é que agora temos que definir a relação inversa, ou seja, do model User com o model Post. Como um usuário poderá ter vários posts, em vez de um objeto, passamos um array para a chave createdPosts. Nesse array, criamos um objeto onde definimos as configurações desse relacionamento.
+
+Observação: Lembre-se que a relação não retornará objetos somente porque definimos um objeto ou array de objetos nela. A relação retornará o tipo de dado definido na chave type. A chave type é quem define qual tipo de dado será de fato retornado na relação.
+
+Relacionando os Documentos
+
+Na prática, existem algumas maneiras que podemos utilizar para realizarmos a conexão entre dois documentos, que dependerá do tipo de dado definido na relação no schema.
+
+- Relacionando um Único Documento
+
+Quando temos uma relação onde o documento atual só pode ser relacionado a um único documento, podemos passar o valor - respeitando o tipo definido na propriedade type no schema - diretamente para a chave da relação. Então, no caso de termos um post associado a um único usuaŕio, poderíamos fazer o seguinte:
+
+	// app.js
+	const Post = require('./models/Post');
+
+	const post = await new Post({
+	  title: 'Test post',
+	  content: 'This is a test',
+	  author: '5e5ab11dff515c5c6861c760'
+	});
+
+	post.save();
+
+No exemplo acima, passamos o id de um usuário hipotético para a propriedade author, que é a propriedade que definimos para esse relacionamento no schema de Post.
+Apesar de termos definido essa propriedade com o tipo ObjectId do MongoDB, o mongoose automaticamente converte uma string de id válida para ObjectId.
+
+- Relacionando Vários Documentos
+
+Para relacionarmos vários documentos a um único documento, precisamos ter uma instância desse documento que pode ser relacionado a vários outros documentos.
+
+	// app.js
+	const User = require('./models/User');
+	const Post = require('./models/Post');
+
+	const user = await User.findById('5e5ab11dff515c5c6861c760');
+
+	await user.createdPosts.push('5e5a81418c1fcd36962fdf12');
+	// or
+	const post = await Post.findById('5e5a81418c1fcd36962fdf12');
+
+	await user.craetedPosts.push(post);
+
+	await user.save();
+
+Utilizamos o método push() fornecido para nós pelo mongoose na propriedade do model onde definimos a relação. Podemos passar como argumento para push() ou uma string contendo o valor definido na propriedade type no schema ou a instância desse documento. Esse método só ficará disponível se tivermos definido a propriedade da relação com o tipo array.
+Se passarmos a instância do documento, não podemos de nos esquecer de utilizar o método save() depois.
+
+Populando a Chave da Relação
+
+Como definimos o tipo da relação como sendo o ObjectId do MongoDB, ao buscarmos um documento, o que será retornado para nós na chave da relação será o id do documento relacionado. E se quiséssemos, além desse id, retornar todos os outros dados referentes a esse documento relacionado?
+O mongoose nos fornece o método populate() disponível na instância de um documento. Então, imagine que, além do id do usuário relacionado ao post, queremos retornar também os outros dados desse usuário, como o email. Faríamos isso da seguinte maneira:
+
+	// app.js
+	const Post = require('./models/Post');
+	
+	const post = await Post
+	  .findById('5e5a81418c1fcd36962fdf12')
+	  .populate('author');
+
+Passamos como argumento para o método populate() a propriedade da relação que queremos popular com os dados do documento relacionado.
+
+Precisamos fazer isso porque o relacionamento em bancos de dados não relacionais não funciona como nos bancos de dados relacionais. Esse não é propósito de bancos de dados não relacionais. Os bancos de dados não relacionais salvam apenas o id de outro documento para que possamos utilizá-lo posteriormente para buscar os dados desse documento. Um documento não é propriamente relacionado com outro documento.
+O método populate() é fornecido pelo mongoose para que possamos buscar e retornar esses dados na chave da relação de forma automática. Caso contrário precisaríamos manualmente utilizar o id dos documentos da relação para buscá-los e termos acesso aos seus dados.

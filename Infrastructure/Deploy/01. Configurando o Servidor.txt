@@ -1,0 +1,75 @@
+Configurando o Servidor
+
+Após escolhido o servidor a ser utilizado no deploy da aplicação, você pode se conectar ao mesmo da seguinte maneira:
+
+	ssh user@server-ip-address/domain
+
+user - usuário a ser utilizado
+server-ip-address/domain - endereço de ip ou domínio do servidor a ser acessado.
+
+A primeira coisa que devemos fazer é criar um novo usuário pois não é interessante ficarmos passando o usuário root pra qualquer pessoa que for realizar alterações na nossa aplicação. Para criarmos um usuário, utilizamos o seguinte comando:
+
+	adduser username
+
+Informe a senha a ser utilizada pelo usuário e responda ou apenas confirme as questões que surgirão no terminal.
+
+Para se logar com o usuário criado, utilize o seguinte comando:
+
+	su username
+
+Agora, passamos a estar logado com o usuário criado e não teremos permissões para fazer qualquer coisa como antes logado como root.
+Para voltarmos ao usuário root, basta utilizar o comando exit.
+
+Para dar permissões permissões de administrador a um usuário (sudo), utilize o seguinte comando:
+
+	usermod -aG sudo username
+
+Lembrando que será necessário sempre utilizar a palavra-chave sudo e informar a senha configurada para esse usuário para que o mesmo realize operações como administrador.
+
+Porém, veremos que ao tentarmos nos conectar com o novo usuário criado utilizando o comando ssh, receberemos uma mensagem de erro a respeito da chave SSH. Isso porque a chave que é gerada, é gerada para um usuário específico da máquina e não para a máquina em si. Então, precisamos criar uma chave SSH para esse novo usuário.
+Para isso, se logue novamente como o usuário root e acesse o diretório home do servidor. Se você digitar o comando ls verá que foi criado um diretório com o nome do usuário criado. Acesse esse diretório e, dentro dele, crie um diretório chamado .ssh.
+
+	mkdir .ssh
+
+Agora, precisamos copiar as chaves ssh que já estão configuradas para o usuário root, para nosso novo usuário. Para isso, rode o seguinte comando:
+
+	cp ~/.ssh/authorized_keys /home/deploy/.ssh/
+
+O comando acima fará com que o arquivo authorized_keys do diretório home do usuário root (~) seja copiado para um arquivo de mesmo nome dentro do diretório .ssh do usuário criado.
+Agora, vamos das as permissões corretas para o arquivo authorized_keys e o diretório .ssh.
+
+	chmod 600 authorized_keys
+	chmod 700 .ssh/
+
+Obs.: Navegue até o diretório em que está localizado o arquivo authorized_keys e o diretório em que está localizado .ssh para rodar os comandos acima.
+
+Por fim, como o diretório .ssh foi criado pelo nosso usuário root, ele pertence ao usuário root. Vamos transferir sua posse para o usuário correto.
+
+	chown -R username:username
+	
+Autenticado com o usuário root, rode os comandos apt update e apt upgrade para atualizar a lista de repositórios do sistema e os repositórios desatualizados, respectivamente. Caso uma janela apareça, mantenha a opção "Keep the local version currently installed".
+
+Instalação do Node.js
+
+Instale a última versão LTS do Node.js.
+
+	curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+	apt-get install -y nodejs
+
+Instalação do Yarn (Opcional)
+
+Caso você goste de utilizar o Yarn como gerenciador de pacotes, instale-o também.
+
+	curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+	apt update && apt install yarn
+
+Instalação do Docker (Opcional)
+
+Caso você deseje utilizar o Docker, instale-o também.
+
+	apt install docker.io
+
+Após instalado, precisamos dar permissão ao usuário criado para que ele possa rodar comandos do Docker.
+
+	usermod -aG docker deploy

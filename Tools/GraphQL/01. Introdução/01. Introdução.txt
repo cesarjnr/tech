@@ -1,0 +1,53 @@
+Introdução ao GraphQL
+
+GraphQL é uma linguagem de query e uma alternativa ao REST.
+Em uma API REST você tem uma rota do tipo GET para buscar os dados por exemplo, algo parecido com isso:
+
+    GET /post
+    {
+        id: 1,
+        title: 'First Post',
+        content: '...',
+        creator: { ... }
+    }
+
+Agora, imagine que nossa aplicação cliente não queira, por exemplo, as propriedades content e creator, apenas as propriedades id e title.
+Utilizando a arquitetura REST só conseguiríamos alcançar essa flexibilidade teríamos 2 opções:
+
+1º: Poderíamos criar vários endpoints para uma mesma entidade de forma que poderíamos retornar esses diferentes dados para cada um deles. Isso ocasionaria a criação de muitos endpoints.
+2ª: Poderíamos receber query parameters e definir uma lógica em nosso backend para lidar com esses parâmetros e retornar os dados de acordo. Isso afetaria a legibilidade do nosso backend.
+
+Como podemos ver, as duas abordagens não seriam ideias, visto que fariam nosso código crescer de forma desenfreada e adicionaria uma certa complexidade na legibilidade.
+O GraphQL resolve esse problema de uma maneira mais limpa. Nosso backend configurado utilizando GraphQL irá expor uma linguagem de query para que as aplicações clientes possam requisitar os dados que necessitarem.
+
+Como o GraphQL Funciona?
+
+No GraphQL temos apenas um endpoint que será sempre do tipo POST. Isso porque, requisições do tipo POST possuem body params, que é justamente onde iremos enviar as expressões de query definidas pela sintaxe do GraphQL para retornar os dados que desejamos.
+
+graphql-01 image here
+
+Uma Query GraphQL
+
+Veja a seguir um exemplo de query que faríamos para realizar uma busca em um backend configurado com GraphQL:
+
+graphql-02 image here
+
+- Temos o tipo da operação que pode ser query, mutation ou subscription, que veremos com mais detalhes mais a frente.
+- Temos o "endpoint" da operação que é basicamente a entidade a qual estamos querendo realizar a operação.
+- E temos os campos que queremos buscar.
+
+Tipos de operação
+
+Veja a seguir os tipos de operação que podemos realizar no GraphQL:
+
+graphql-03 image here
+
+Na imagem acima podemos ver as operações e suas respectivas funções em uma API REST.
+
+Observação: Lembre-se sempre que, apenas de estarmos realizando essa "tradução" para a arquitetura REST, todos as operações realizadas no GraphQL são feitas utilizando o método POST.
+
+Visão Geral
+
+graphql-04 image here
+
+Os tipos de operação são como se fossem nossas rotas e os Resolvers, que veremos mais a frente, são como se fossem nossos controllers na arquitetura REST.

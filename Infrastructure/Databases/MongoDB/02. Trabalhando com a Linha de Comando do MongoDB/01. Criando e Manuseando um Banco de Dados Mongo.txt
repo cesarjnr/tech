@@ -1,0 +1,177 @@
+Criando e Manuseando um Banco de Dados Mongo
+
+Para utilizar a linha de comando do Mongo:
+
+1. Inicialize o MongoDB.
+
+	sudo service mongod start
+
+2. Verifique se o MongoDB foi inicializado com sucesso. Cheque os conteúdos do arquivo de log em /var/log/mongodb/mongod.log, verifique se existe a seguinte linha:
+
+	[initandlisten] waiting for connections on port 27017
+
+27017 é a porta padrão que o mongd escuta.
+
+3. Comece a usar a linha de comando do MongoDB.
+
+	mongo
+
+Caso necessário, você pode parar o MongoDB com o seguinte comando:
+
+	sudo service mongod stop
+
+Ou reiniciar o MongoDB com o seguinte comando:
+
+	sudo service mongod restart
+
+Comandos Básicos
+
+show dbs
+
+Lista todas as bases de dados presentes no servidor.
+
+use database-name
+
+"Entra" no banco de dados informado.
+Se você utilizar este comando com o nome de uma base de dados inexistente, uma nova será criada automaticamente com este nome. Porém, ela não será listada no comando que lista os bancos de dados pois ela é criada sem nenhuma collection.
+
+db
+
+Informa o banco de dados que você está utilizando.
+
+show collections
+
+Lista as coleções do banco de dados em que você está.
+
+db.dropDatabase()
+
+Deleta o banco de dados em que você está.
+
+db.createCollection('collection-name')
+
+Cria uma nova coleção no banco que você está utilizando.
+
+Inserindo Documentos em uma Collection
+
+Para inserir um documento em uma collection, utilizamos o comando db.collection-name.insert(), onde passamos como argumento um objeto com as propriedades e seus respectivos valores.
+
+	db.posts.insert({
+	  title: 'Post One',
+	  body: 'Body of post one',
+	  category: 'News',
+	  likes: 4,
+	  tags: ['news', 'events'],
+	  user: {
+	    name: 'John Doe',
+	    status: 'author'
+	  },
+	  date: Date()
+	})
+
+Como podemos ver, podemos passar quase qualquer tipo de dado, incluindo funções embutidas do Mongo como Date() que retorna a data atual.
+
+Se quisermos inserir mais de um documento ao mesmo tempo, utilizamos o comando db.collection-name.insertMany(), onde passamos como argumento um array de objetos com as propriedades e seus respectivos valores.
+
+	db.posts.insertMany([
+	  {
+	    title: 'Post two',
+	    body: 'Body of post two',
+	    category: 'Technology',
+	    date: Date()
+	  },
+	  {
+	    title: 'Post three',
+	    body: 'Body of post three',
+	    category: 'News',
+	    date: Date(),
+	  },
+	  {
+	    title: 'Post four',
+	    body: 'Body of post four',
+	    category: 'Entertainment',
+	    date: Date()
+	  }
+	]);
+
+Repare que os documentos que inserimos no insertMany() não possuem as propriedades likes, tags e user, e isto não tem problema algum pois diferentemente do modelo relacional nós não precisamos seguir um schema previamente definido.
+
+Realizando Consultas em Uma Collection
+
+Para realizar uma consulta de todos os documentos presentes em uma collection, podemos utilizar o seguinte comando:
+
+	db.posts.find()
+
+A legibilidade dos dados retornados não é muito agradável, e por isso, podemos utilizar concatenar o método pretty() em nosso comando:
+
+	db.posts.find().pretty()
+
+Para realizarmos filtragem em nossas consultas (similar à cláusula WHERE do SQL relacional), podemos passar um objeto como argumento para o método find(). Esse objeto conterá as propriedades com os respectivos valores que devem ser filtrados.
+
+	db.posts.find({ category: 'News' })
+
+A consulta acima retornará todos os documentos que possuem como valor a string 'News' na propriedade category.
+
+Para ordenar nossas consultas, chamamos o método sort(). Passamos um objeto para esse método, onde a propriedade será a que queremos ordenar e como valor passamos 1 (ordena de forma ascendente) ou -1 (ordena de forma descendente).
+
+	db.posts.find().sort({ title: 1 })
+
+A consulta acima retornará todos os documentos ordenados de forma ascendente pela propriedade title.
+
+Para contarmos a quantidade de documentos retornados de uma consulta podemos utilizar o método count().
+
+	db.posts.find({ category: 'News' }).count()
+
+Podemos limitar o número de documentos retornados de uma consulta utilizando o método limit(). Passamos como argumento um inteiro que representa o número máximo de documentos que serão retornados na consulta.
+
+	db.posts.find().limit(2)
+
+Podemos encadear métodos simplesmente invocando-os um após o outro.
+
+	db.posts.find().sort({ title: -1 }).limit(2)
+
+A consulta acima retornará somente 2 documentos ordenados de forma ascendente pela propriedade title.
+
+Para retornar apenas um documento em uma consulta, utilizamos o método findOne(). Passamos como argumento um objeto com a propriedade e valor que queremos filtrar.
+
+	db.posts.findOne({ category: 'News' })
+
+Caso haja mais de um documento com esse mesmo valor para a mesma propriedade, apenas o primeiro será retornado.
+
+Podemos utilizar a função forEach no resultado de uma consulta, que funciona da mesma maneira que nas linguagens de programação tradicionais.
+
+	db.posts.find().forEach(function(doc) { print('Blog Post: ' + doc.title) })
+
+O código acima invoca a função forEach na consulta realizada. A função forEach aqui funciona da mesma maneira que nas linguagens de programação tradicionais, onde cada documento será passado para o parâmetro doc da função callback. No escopo da função callback, apenas imprimimos no console uma string concatenada ao valor da propriedade title de cada documento.
+
+Atualizando Documentos
+
+Para atualizar um documento de uma collection utilizamos o método update(), que possui 3 parâmetros: o 1º recebe um objeto com a propriedade e o valor do documento que será atualizado. O 2º parâmetro recebe um objeto com as propriedades e valores que serão atualizados no documento selecionado. O 3º parâmetro recebe um objeto onde podemos definir algumas configurações.
+
+	db.posts.update(
+	  { title: 'Post Two' },
+	  {
+	    title: 'Post Two',
+	    body: 'New post 2 body',
+	    date: Date()
+	  },
+	  { upsert: true }
+	)
+
+O código acima realizará uma consulta para buscar o documento um valor 'Post Two' na propriedade title. O documento retornado será atualizado com os valores das propriedades definidos no objeto do 2º parâmetro. O objeto do 3º parâmetro seta uma propriedade chamada upsert com o valor true, que irá inserir um novo documento com essas propriedades caso não seja retornado nenhum documento com o objeto passado para o 1º parâmetro.
+O problema dessa abordagem é que, caso uma das propriedades existentes no documento não seja informada ela será removida. Isso porque todas as propriedades e valores do documento serão substituídos pelas propriedades e valores do objeto passado para o 2º parâmetro. Como não informamos um valor para a propriedade category, ela é removida.
+Para atualizarmos apenas as propriedades informadas no objeto do 2º parãmetro sem remover as já existentes e que não foram informadas, utilizamos o operador $set dentro do objeto do 2º parâmetro. Esse operador será uma propriedade e terá como valor outro objeto contendo as propriedades e valores que serão atualizadas.
+
+	db.posts.update(
+	  { title: 'Post Two' },
+	  {
+	    $set: {
+	      body: 'Body of post 2',
+	      category: 'Technology'
+	    }
+	  },
+	  { upsert: true }
+	)
+
+No exemplo acima, como estamos utilizando operador $set, apenas a propriedade body será modificada. As propriedades que não foram informadas permanecerão as mesmas e não serão removidas. A propriedade category, neste caso, será inserida, já que ela tinha sido removida na atualização anterior.
+
+OBSERVAÇÃO: Aqui, assim como no modelo relacional, é importante que seja utilizado o ID do documento para buscar e atualizar um documento, pois ele é o identificador único de um documento em uma collection. No exemplo acima utilizamos a propriedade title apenas como exemplo, neste caso seria retornado o primeiro documento com o valor 'Post Two' na propriedade title.

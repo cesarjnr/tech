@@ -1,0 +1,277 @@
+Global Object Identification
+
+Armazenamento e Cache
+
+O Relay utiliza um simples armazenamento de dados normalizado no lado do cliente na memória chamado Relay Store. Quando o Relay carrega no navegador pela primeira vez, ele armazena todos os dados nesta store, e gerencia um estado simples para cada registro.
+Na frente do Relay Store, o Relay tem uma Queue Store onde ele gerencia as alterações dos dados armazenados. A Queue Store nos permite fazer coisas, como atualizações otimistas na interface do usuário. Ela também permite reversões mais fáceis no caso de uma ação de alteração falhar. Em vez de gerenciar manualmente um estado para a ação, podemos ter o Relay apenas removendo o objeto defeituoso da Queue Store. Por trás do Relay Store, o Relay tem uma camada de cache, que pode ser qualquer motor de armazenamento, como o localStorage por exemplo.
+
+Identificação de Objeto
+
+Todos os objetos no Relay tem IDs únicos por todo o sistema. Isto permite o Relay reconsultar qualquer registro quando precisar, e evita qualquer ambiguidade entre os objetos dentro da Relay Store. Sem IDs únicos apropriados, registros duplicados acharão seu espaço no armazenamento dos dados.
+Por exemplo, imagine que temos uma aplicação cliente onde exibimos uma lista de usuários cujo nome começa com J, e para cada usuário, mostramos sua lista de amigos. A usuária Jane que também é uma amiga de John, será carregada duas vezes naquela view.
+O relay também tem um algoritmo diferente para tornar a consulta de dados o mais eficiente possível. Se já tivermos parte dos dados de um objeto, mas precisarmos de mais, não precisamos pedir o objeto inteiro, podemos pedir apenas pela diferença entre o que precisamos e o que temos.
+Por exemplo, na mesma aplicação cliente onde exibimos uma lista de usuários, a página inicial da lista exibe o nome e a localização dos usuários, e quando clicamos na ficha de um usuário, também queremos exibir seu nome, localização, email, e número de telefone. Quando clicamos em um usuário que é globalmente identificado com um ID único, sabemos que já temos seu nome e localização na memória, então podemos pedir o serviço de dados apenas seu email e número de telefone.
+Se tivermos outra interface onde exibimos uma imagem de perfil do usuário junto com seu nome e número de telefone, então precisaríamos pedir ao serviço de dados apenas sua imagem de perfil.
+
+Implementando Variáveis na Prática
+
+Para trabalhar com as variáveis do Relay, implementaremos uma feature de busca para os usuários da nossa aplicação.
+Teremos uma UI com uma caixa de input, e quando o usuário começar a digitar na caixa, atualizaremos os usuários exibidos baseado em uma busca no servidor utilizando o termo da pesquisa inserido.
+Isto não seria uma tarefa fácil sem o Relay. Precisamos construir uma query utilizando o valor do input do usuário, buscar os registros do GraphQL, depois alterar o estado dos componentes da nossa UI baseado nos novos dados. Precisamos fazer esta operação várias vezes conforme o usuário digita na caixa. Para performar isto de forma eficiente, precisamos gerenciar os dados. Por exemplo, cacheamento básico é necessário para não buscar respostas duplicadas. Imagine o que aconteceria se o usuário digitar a palavra do, depois digitar or, depois apagar o or; sem cacheamento, buscaremos a resposta para uma query baseado a palavra "do" duas vezes.
+Antes de termos o Relay controlando uma feature de busca, precisamos que nosso servidor GraphQL suporte um mecanismo de busca em nossa lista de usuários. Podemos utilizar um argumento de campo em uma connection users para passar o termo de busca. Por exemplo:
+
+	query {
+	  users(searchTerm: "findme") {
+			node {
+				email
+			}
+	  }
+	}
+
+A implementação disto no servidor precisaria de duas alterações:
+
+- Os argumentos do campo users devem suportar um novo argumento searchTerm do type GraphQLString. Já que o campo users já define um objeto de argumento fornecido pelo Relay (connectionArgs), precisaremos extendê-lo.
+- Quando resolvemos o campo users para uma promise, precisaremos modificar a promise para retornar apenas os usuários filtrados pelo novo input searchTerm. A sintaxe para isso dependeria do banco de dados em uso, mas no MongoDB precisaremos utilizar uma expressão regular.
+
+Aqui está a nova definição da nosso schema onde configuramos nossa connection users para suportar o argumento searchTerm.
+
+	// src/graphql/types/QueryType.ts
+	import { GraphQLObjectType, GraphQLNonNull, GraphQLString } from 'graphql';
+
+	import { UserConnectionType } from './types/UserType';
+	
+	export default new GraphQLObjectType({
+	  name: 'Query',
+	  fields: () => ({
+	    users: {
+	      type: GraphQLNonNull(UserConnectionType),
+	      description: 'A list of the ships in the database',
+	      args: {
+		...connectionArgs,
+		search: {
+		  type: GraphQLString
+		}
+	      }
+	    }
+	  })
+	});
+
+Podemos testar isto imediatamente com um termo de busca válido:
+
+	query {
+	  users(searchTerm: "cesar") {
+	    edges {
+	      node {
+		email
+	      }
+	    }
+	  }
+	}
+
+Implementando Object Identification na Prática
+
+Para demonstrar os princípios de design de object identification do Relay vamos utilizar o exemplo de posts de um usuário. Vamos criar um campo que retorna o número de posts de um usuário.
+Primeiro precisaremos deixar o servidor GraphQL ciente deste novo campo. Precisamos adicioná-lo ao objeto de configuração UserType.
+
+	// src/graphql/types/UserType
+	import { GraphQLObjectType, GraphQLNonNull, GraphQLString, GraphQLInt } from 'graphql';
+
+	export default new GraphQLObjectType({
+	  name: 'User',
+	  fields: () => ({
+	    name: {
+	      type: GraphQLNonNull(GraphQLString)
+	    },
+	    email: {
+	      type: GraphQLNonNull(GraphQLString)
+	    },
+	    postsCount: {
+	      type: GraphQLNonNull(GraphQLInt)
+	    }
+	  })
+	});
+
+Agora, imagine que nossa UI renderize uma lista de usuários inicialmente mas não traz postCounts, somente name e email, e somente quando esse usuário for clicado é que iremos buscar essa propriedade postsCount.
+
+	query($showPosts: false) {
+	  users(showPosts: $showPosts) {
+	    email
+	    name
+	    showPosts @include(if: $showPosts) {
+	      name
+	    }
+	  }
+	}
+
+Agora, ao clicar em um dos usuários, a seguinte consulta será feita ao servidor:
+
+	query OneUser($id: "YXJyYXljb25uZWN0aW9uOjE", $showPosts: true) {
+	  node(id: $id) {
+	    ...F0
+	  }
+	}
+
+	fragment F0 on User {
+	  postsCount @include(if: $showPosts)
+	}
+
+Temos dois pontos principais nessa query:
+
+- Quando realizamos essa consulta, o Relay constrói uma nova query GraphQL (chamada OneUser), mas ela não inclui todo o fragment associado a cada usuário; não há nenhum email ou name na query. O relay tem um algoritmo diferente por trás das cenas que diferencia as queries e os fragments para descobrir qual consulta incremental enviar ao servidor. Neste exemplo, dentro do fragment de um usuário, o Relay já pediu os campos email e name no carregamento inicial da página. Agora, ele precisa do campo postsCount que ainda não tem, então constrói uma query que pede apenas o campo postsCount.
+- Já que queremos este campo postsCount para um único usuário, precisamos enviar o ID desse usuário para o servidor GraphQL para que o servidor possa identificar o objeto do usuário. O Relay tem uma sintaxe global para buscar qualquer objeto no sistema utilizando seu ID único. É por isso que vemos o campo node neste exemplo com um argumento id. O Relay utiliza esta sintaxe para reconsultar mais informações sobre qualquer node que ele parcialmente buscou anteriormente.
+
+Para fazer este tipo de query funcionar precisamos dar um ID global único a cada objeto em nosso schema e implementar a feature de node interface do Relay, fazer nossos types personalizados implementá-la e utilizá-la para suportar um campo node no type root query.
+Para implementar a interface Node em nosso servidor, podemos utilizar alguns dos helpers do pacote graphql-relay. Nomeadamente, precisamos das funções globalIdField(), fromGlobalId() e nodeDefinitions().
+A função globalIdField() pode ser utilizada para criar um campo GraphQL que automaticamente resulta em um valor que é globalmente único em todo o sistema. Por exemplo, devemos dar um global ID ao nosso UserType no caso do Relay quiser utilizar isso:
+
+	// src/graphql/types/UserType.ts
+	import { GraphQLObjectType } from 'graphql';
+	import { globalIdField } from 'graphql-relay';
+
+	export default new GraphQLObjectType({
+	  name: 'User',
+	  fields: () => ({
+	    id: globalIdField('User', obj => obj._id),
+	    posts: ...
+	  })
+	});
+
+Podemos agora testar esta feature pedindo o id do nível root do campo user:
+
+	query {
+	  user {
+	    id
+	  }
+	}
+
+O servidor responderá com uma string única de ID base64 gerada pelo Relay.
+
+	{
+	  "data": {
+	    "user": {
+	      "id": "UXVvdGVzTGlicmFyeTo="
+	    }
+	  }
+	}
+
+A função globalIdField() é executada automaticamente logo após a função resolve() retornar os dados de determinado objeto. Ela então pegará o nome do type passado para seu 1º parâmetro e o id retornado da função de seu segundo 2º parâmetro, e criará uma string base64 da junção dos dois. O 2º parâmetro é opcional e caso a função não seja passada, globalIdField() tentará buscar automaticamente pelo valor de um campo id no objeto retornado. Caso não encontre, criará a string base64 apenas em cima do nome do type passado, o que não é o ideal. No exemplo acima, precisamos utilizar a função pois estamos trabalhando com o MongoDB e a propriedade id dos documentos é nomeada como _id, então precisamos utilizar a função para retornar esse valor.
+	
+	import { GraphQLObjectType,GraphQLNonNull, GraphQLString } from 'graphql';
+
+	export default new GraphQLObjectType({
+	  name: 'User',
+	  fields: {
+	    id: globalIdField('User', obj => obj._id),
+	    name: {
+	      type: GraphQLNonNUll(GraphQLString)
+	    },
+	    email: {
+	      type: GraphQLNonNull(GraphQLString)
+	    }
+	  },
+	  ...
+	});
+
+Cada id de usuário agora será único em todo o sistema, e não apenas na coleção de usuários.
+
+	query {
+	  users {
+	    edges {
+	      node {
+					id
+	      }
+	    }
+	  }
+	}
+
+Agora que todo objeto em nosso schema tem um ID único global, estamos prontos para implementar o campo node, que aceita esse ID global único como seu argumento e responde com o objeto que esse ID identifica.
+Todo ID global do Relay pode ser traduzido de volta para os dois valores utilizados para criá-lo, o nome de seu type e seu id dentro de sua coleção. Podemos utilizar a função fromGlobalId() do Relay para fazer esta tradução.
+Por exemplo, a linha seguinte exibe uma chamada para fromGlobalId() com um dos IDs do node dos nossos usuários:
+
+	fromGlobalId('UXVvdGU6NTcyODFjYzQzYTg4ZGJhMjA1MDBmOWMy');
+
+Isto retornaria algo do tipo:
+
+	{ type: 'User', id: '57281cc43a88dba20500f9c2' }
+
+Podemos utilizar estes dois valores, type e id, para localizar o objeto identificado por este ID global.
+
+Observação: Existe também uma função toGlobalId() que funciona exatamente de maneira oposta a fromGlobalId(). Esta função toGlobalId() é o que a função globalIdField() utiliza como resolver do campo ID que ela cria.
+
+O Relay fornece uma função chamada nodeDefinitions para nos ajudar com esta tarefa da criação da interface. Podemos utilizar nodeDefinitions para criar uma interface que qualquer objeto em nosso schema possa implementar.
+A função nodeDefinitions() retorna a interface Node e o campo node que podemos incluir em qualquer type que quisermos. Ela recebe dois argumentos:
+
+- O primeiro argumento é uma função que retorna um objeto mapeado a partir do ID global passado como argumento para ela. Ou seja, ela recebe como argumento o ID global de um objeto e retorna esse objeto. Essa função pode retornar uma promise, assim como qualquer outra função resolve().
+- O segundo argumento é uma função que retorna um type mapeado a partir de um objeto que implementa a interface Node, passado como argumento para ela.
+
+Sua utilização é a seguinte:
+
+	// src/graphql/interfaces/NodeInterface.ts
+	import { nodeDefinitions, fromGlobalId } from 'graphql-relay';
+
+	const { nodeInterface, nodeField } = nodeDefinitions(
+		async (globalId, { db }) => {
+			const { type, id } = fromGlobalId(globalId);
+
+			if (type === 'User') {
+				const user = await db.collection('users').findOne({ _id: id })
+
+				return user;
+			}
+		},
+
+		obj => obj.type;
+	):
+
+Implementamos a interface Node apenas uma vez e todos os types do nosso schema a implementarão. É por isso que precisamos implementar ambas as funções manualmente de acordo com os types que definimos para nosso schema.
+
+- A primeira função, como vimos, recebe o ID global e o contexto de um objeto que implementa a interface Node e deve retornar o objeto referente a esse ID. O que precisamos fazer primeiro é utilizar a função fromGlobalId() passando o ID global que recebemos como argumento para receber o objeto referente ao ID passado. Como vimos acima, essa função nos retorna um objeto com as propriedades type e id, onde type é o type desse objeto e id é o seu id na coleção da qual ele pertence. Depois precisamos verificar qual o type desse objeto, e chamar o método apropriado para buscar esse dado no banco. No exemplo acima, se o type for 'User', chamamos nosso método que conversa com o banco passando o id desse usuário para buscá-lo. Apesar de não termos um retorno padrão, precisamos verificar por todos os types que implementarem a interface Node e retornar o objeto determinado.
+- A segunda função recebe o objeto (com os parâmetros context, info e abstractType sendo opcionais) retornado pela primeira função e deve retornar o type desse objeto para que o cliente possa acessar essas propriedades com a sintaxe de fragment ao montar a query. A implementação dessa função fica a cargo do desenvolvedor, ou seja, é o desenvolvedor quem define a forma como verificar e retornar o type correto.
+
+Agora, precisamos importar a interface nos types que queremos implementá-lá e passá-la para a propriedade interfaces do objeto do método construtor da classe GraphQLObjectType:
+
+	// src/graphql/types/UserType.ts
+	import { GraphQLObjectType, GraphQLNonNull, GraphQLString } from 'graphql';
+	import { globalIdField } from 'graphql-relay';
+
+	import { nodeInterface } from './interfaces/NodeInterface.ts';
+
+	export default new GraphQLObjectType({
+		name: 'User',
+		description: 'Represents User',
+		fields: () => ({
+			id: globalIdField('User', obj => obj._id),
+			_id: {
+				type: GraphQLNonNull(GraphQLString),
+				description: 'MongoDB _id'
+			},
+			name: {
+				type: GraphQLNonNull(GraphQLString)
+			},
+			birth: {
+				type: GraphQLString,
+				resolve: user => user.birth ? user.birth.toISOString() : null
+			}
+		}),
+		interfaces: [nodeInterface]
+	});
+
+Por fim, adicionamos nosso nodeField que armazena o type de um objeto na propriedade node da query root:
+
+	// src/graphql/index.ts
+	import { GraphQLObjectType, GraphQLNonNull, GraphQLList } from 'graphql';
+
+	import UserType from './UserType';
+	import { users } from './resolvers/user';
+	import { nodeField } from './interfaces/NodeInterface';
+
+	export default new GraphQLObjectType({
+		name: 'RootQuery',
+		fields: () => ({
+			node: nodeField,
+			users: {
+				type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+				resolve: users
+			}
+		})
+	});

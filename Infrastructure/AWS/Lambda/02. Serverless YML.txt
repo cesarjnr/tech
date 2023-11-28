@@ -1,0 +1,34 @@
+Serverless YML
+
+Como vimos até aqui, toda nossa aplicação serverless é regida pelo arquivo serverless.yml. Veremos agora suas principais chaves de maneira detalhada.
+
+	service: # Nome do serviço
+	
+	provider: # Configuração do cloud provider
+	  name: 'aws' # Nome do cloud provider
+	  runtime: 'nodejs12.x' # Ambiente de execução a ser utilizado pelas lambdas
+	  region: 'sa-east-1' # Região na qual se encontra o servidor onde será realizado o deploy do serviço. Por padrão, é utilizada a região US EAST (N. Virginia) us-east-1.
+	  memorySize: 256 # Tamanho (em MB) máximo de memória a ser utilizado pelas lambdas
+	  iamRoleStatements: # Configuração das permissões que as lambdas terão, os serviços que as lambdas terão permissão para utilizar
+	    - Effect: Allow # Pode assumir os valores Allow ou Restrict e estamos informando que vamos restringir ou permitir algumas coisas
+	      Action: # Informa que vamos permitir (Allow) determinadas ações
+	        - s3:GetObject # Permite (Allow) que as lambdas acessem o serviço S3 e busquem objetos nos buckets
+	        - s3:PutObject # Permite (Allow) que as lambdas acessem o serviço S3 e salve objetos nos buckets
+	      Resource: # Informa quais recursos dentro desses serviços as lambdas terão acesso, recursos esses que vão variar de serviço para serviço
+	        - "arn:aws:s3:::*" # Informa o caminho dos buckets que as lambdas terão acesso para realizar as ações definidas anteriormente. Nesse caso, o * informa que elas terão acesso a todos os buckets
+
+	functions: # Definição das lambdas
+	  hello: # Nome da lambda
+	    handler: handler.hello # Arquivo.funcao contendo a implementação da lambda, não sendo necessário o nome da função handler ser o mesmo da lambda
+	    environment: # Definição de variáveis de ambiente
+	      bucket: serverless # Par de chave valor com o nome da variável e seu valor
+	    events: # Informa que a lambda será executada após determinados eventos serem disparados em outros serviços
+	      - s3: # Informa que vamos ouvir eventos do serviço S3
+	          bucket: serverless # Nome do bucket no qual vamos ouvir os eventos
+	          event: s3:ObjectCreated:* # Nome do evento que queremos ouvir e o * representa que serão escutados todos os eventos de criação de objeto, independente da maneira na qual ele tenha sido criado. Isso porque existem várias maneiras de se criar objetos no S3
+	          rules: # Definição de regras para a execução da lambda quando o evento for disparado
+	            - prefix: uploads/ # Informa o prefixo o qual queremos que a lambda seja disparada. Neste exemplo, a lambda só será disparada se o upload acontecer dentro do diretório uploads do bucket
+	            - suffix: .jpg # Informa o sufixo o qual queremos que a lambda seja disparada. Neste exemplo, a lambda só será disparada se o arquivo do upload tiver a extensão .jpg
+	            
+*** Para definirmos mais de uma configuração, como definir o sufixo .png pros arquivos do S3, por exemplo, basta duplicar o bloco de configuração e alterar as propriedades desejadas.
+*** Para definirmos variáveis de ambiente para todas as lambdas, basta definir a chave environment no nível da chave provider. As variáveis definidas no nível da lambda serão mescladas com a do nível do provider. Se a mesma chave existir em ambos os níveis, provider e lambda, a que está definida na lambda terá precedência.

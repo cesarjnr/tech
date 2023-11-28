@@ -1,0 +1,243 @@
+WebSockets
+
+O Que São WebSockets?
+
+Baseado na definição do MDN, websockets é uma tecnologia que permite a abertura de uma sessão de comunicações interativas entre o navegador de um usuário e um servidor. Com esta tecnologia, um usuário pode enviar mensagens para um servidor e receber respostas baseadas em eventos sem exigir long polling*, como ter que constantemente verificar o servidor por uma resposta. Pense em quando você está respondendo um email no Gmail, e na parte inferior da sua tela você vê um pop up dizendo "1 mensagem não lida de somemail@gmail.com" vindo da pessoa que você estava acabando de responder. Esse tipo de feedback em tempo real é devido a tecnologias como WebSockets!
+Para enfatizar porque WebSockets são tão legais, vamos primeiro dar uma olhada rápida no long polling do HTTP, que foi o precursor do WebSockets. O long polling é uma técnica que permite que uma conexão HTTP permaneça aberta aguardando uma resposta do servidor para que possa ser fechada e, depois, reaberta. Um cliente consulta o servidor requisitando novas informações. O servidor mantém a requisição aberta até que os novos dados estejam disponíveis. Um vez disponíveis, o servidor responde e envia as novas informações. Quando o cliente recebe as novas informações, ele imediatamente envia outra requisição, e a operação é repetida.
+
+websockets-01 image here
+
+Entretanto, como você pode imaginar, isto pode ficar muito penoso conforme o loop continua e o o banco de dados do backend cresce. Com mais usuários pingando o servidor, isto pode demorar ainda mais. É muito caro em termos de CPU, consumo de largura de banda e armazenamento. Toda vez que um usuário realiza uma requisição HTTP, um monte de headers e dados de cookie são transferidos para o servidor. Isto pode adicionar uma quantidade razoavelmente grande de dados que precisa ser transferida, o que aumenta a latência. Então, qual é a solução? WebSockets.
+WebSockets permite que uma conexão de socket TCP de longa data seja estabelecida entre o cliente e o servidor, permitindo que mensagens full duplex e bi-direcionais serem instantaneamente distribuídas. Isto é feito com sobrecarga mínima, resultando em uma conexão de baixa latência.
+Para descrever mais sobre como o WebSockets funciona, dê uma olhada no diagrama abaixo:
+
+websockets-02 image here
+
+Uma requisição a uma conexão WebSocket é enviada ao servidor a partir de um cliente (ou de vários clientes) através de um processo chamado de handshake, que começa com o cliente enviando uma requisição HTTP comum ao servidor. Parte desta requisição inclui um header Upgrade, que indica ao servidor que o cliente está tentando fazer uma conexão WebSocket. Esta requisição é chamada de handshake.
+
+    GET /text HTTP/1.1\r\n
+    Upgrade: WebSocket\r\n
+    Connection: Upgrade\r\n
+    Host: www.websocket.org\r\n
+    ...\r\n
+
+    HTTP/1.1 101 WebSocket Protocol Handshake\r\n
+    Upgrade: WebSocket\r\n
+    Connection: Upgrade\r\n
+    ...\r\n
+
+Se o servidor aceitar o handshake e suportar o protocolo, a conexão HTTP inicial é substituída com a conexão WebSocket utilizando o mesmo protocolo TCP/IP. E essa conexão é mantida por cada cliente, permitindo dados serem enviados em tempo real de volta para o cliente a partir do servidor sob demanda. Por conta desta conexão entre o servidor e o cliente permanecer aberta, isso elimina a necessidade de pesquisa constante por parte do cliente para ver se novas informações foram armazenadas no backend. Ao fazer isso, isto elimina a necessidade de requisições de busca constantes ao servidor backend.
+WebSockets não exigem que um usuário envie uma requisição para que o servidor responda. Em vez disso, o servidor retorna qualquer informação que obtém, então o lado do cliente apenas escuta essa informação. Comparado ao polling, WebSockets tem muito menos latência em termos de messagens sendo enviadas aos seus clientes, devido à abertura de conexão. Enquanto com long-polling a conexão tem que ser reestabelecida com cada requisição, WebSockets apenas envia a resposta assim que a recebe em tempo real.
+
+websockets-03 image here
+
+WebSockets utiliza sockets - canais de comunicação contínuos entre dois pontos - em sua implementação. Sempre que o servidor recebe novas informações, ele automaticamente as envia para o cliente através do socket.
+
+Exemplo de Uso do WebSockets
+
+Vamos ver um exemplo de uma sala de chat.
+Quando Kira abre uma sala de chat em seu navegador, ela abre uma conexão socket no servidor. Supondo que todos os outros usuários já tenham feito a mesma coisa, quando ela digita "Hi humans!" e envia a mensagem para todos, esta mensagem é entregue ao servidor através do socket que automaticamente envia a mensagem a todos os usuários nesta sala de chat pública.
+
+websockets-04 image here
+
+websockets-05 image here
+
+Nosso chat utiliza WebSockets, o que significa que o servidor está aguardando (ouvindo) para receber quaisquer novas mensagens do cliente. Quando o servidor recebe uma mensagem de Kira, ele a envia para todos os usuários (clientes) no chat.
+Isto é como se fosse um ciclo: o cliente envia uma nova mensagem ao servidor, que "ouve" atualizações do cliente, então assim que o servidor recebe a mensagem, ele a envia através da conexão de socket para todos os clientes que estavam ouvindo para receber atualizações do servidor.
+E isto é repetido até que o usuário deixe o chat.
+
+WebSockets na Prática
+
+Crie um diretório chamado public e adicione um arquivo index.html dentro dele:
+
+    // public/index.html
+    <!DOCTYPE html>
+    <html lang="pt-br">
+        <head>
+            <meta charset="utf-8" />
+            <title>Websockets</title>
+        </head>
+        <body>
+            <h1>Hi humans!</h1>
+        </body>
+    </html>
+
+Crie o arquivo index da aplicação e sirva o arquivo index.html do diretório public ao navegador:
+
+    // index.js
+    const express = require('express');
+    const app = express();
+
+    app.use(express.static('public'));
+
+    const server = app.listen(3000, () => {
+        console.log('Listening on port 3000');
+    });
+
+Instale a lib socket.io:
+
+    yarn add socket.io
+
+Importe a função socket() disponibilizada pela lib:
+
+    // index.js
+    const socket = require('socket.io');
+
+A função socket() aceita um servidor, como o criado pelo método listen() do express e retorna um novo servidor configurado como websocket. Então, passamos nossa constante server para ele e armazenamos seu retorno, que é um objeto:
+
+    // index.js
+    const io = socket(server);
+
+Neste objeto, temos acesso ao método on() que nos permitirá estebelecer uma conexão com os clientes. Ele recebe como argumentos a string "connection" e uma callback com o socket estabelecido entre o servidor e o cliente.
+
+    // index.js
+    ...
+
+    io.on('connection', socket => {
+        console.log('Made socket connection', socket.id)
+    });
+
+O método on() é chamado cada vez que um cliente diferente estabelece uma conexão com o servidor.
+
+Agora temos que conectar nosso cliente ao servidor. No arquivo index.html, passe um link cdn da biblioteca socket.io:
+
+    // index.html
+    ...
+
+    <head>
+        ...
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    </head>
+
+Crie um arquivo chamado chat.js em seu diretório public e o adicione na parte inferior do body do seu arquivo index.html:
+
+    // index.html
+    ...
+
+    <body>
+        ...
+
+        <script src="/chat.js"></script>
+    </body>
+
+Quando o arquivo index.html é servido ao navegador, ele carregará a biblioteca socket.io-client (graças ao link CDN). Depois, ele rodará nosso arquivo chat.js onde estabeleceremos a conexão com o nosso servidor e escreveremos a lógica do nosso chat.
+No arquivo chat.js, adicione a seguinte linha de código:
+
+    // chat.js
+
+    const socket = io(window.location.origin)
+
+A função io() recebe como argumento uma string contendo a URL do servidor na qual o WebSocket foi estabelecido. Como a URL do navegador é a mesma do nosso servidor, utilizamos window.location.origin para pegar essa URL e fazer uma conexão entre o cliente e o servidor.
+
+Neste ponto, se atualizarmos nossa página conseguimos ver "Made socket connection" e uma combinação estranha de letras e números que representam o socket.id (um socket único) em nosso terminal. Abra uma nova guia em seu navegador e vá para localhost:3000. Você verá mais um log "Made socket connection" e socket.id no seu terminal.
+Isto significa que estabelecemos uma conexão entre o cliente e o servidor e agora podemos passar livremente os dados entre esses dois clientes.
+
+No <body> do arquivo index.html, crie um formulário para o chat.
+
+    // index.html
+    ...
+
+    <div id="chat-container">
+        <div id="chat-window">
+            <div id="output"></div>
+            <div id="answer"></div>
+        </div>
+
+        <input id="name" type="text" placeholder="Name" />
+        <input id="message" type="text' placeholder="Message" />
+        <button id="send" type="submit" name="action">
+            Send
+        </button>
+    </div>
+
+No arquivo chat.js, abaixo de const socket = io(window.location.origin), crie emissores que enviarão os dados para o servidor quando alguém enviar uma mensagem no formulário do nosso chat e crie também ouvintes que escutarão para receber os dados (mensagens de outros clientes) do servidor.
+
+    // chat.js
+    ...
+
+    const message = document.getElementById('message');
+    const name = document.getElementById('name');
+    const btn = document.getElementById('send');
+    const output = document.getElementById('output');
+    const answer = document.getElementById('answer');
+
+Adicione um event listener ao botão. Uma vez que alguém clicar no botão, emitimos um evento (uma mensagem neste caso) e a enviamos para o socket no servidor. Fazemos isso utilizando o método emit() do nosso objeto socket.
+
+    // chat.js
+    ...
+
+    btn.addEventListener('click', () => {
+        socket.emit('message', {
+            message: message.value,
+            name: name.value
+        });
+
+        message.value = '';
+    });
+
+Essa função recebe como argumento uma string contendo o nome do evento que queremos emitir (podemos dar qualquer nome) e os dados que queremos enviar, que pode ser de qualquer tipo. No exemplo acima estamos enviando um objeto com os valores dos inputs name e message.
+
+Adicionamos também um event listener para o evento 'keypress' e o emitimos para o servidor. O evento "keypress" é emitido sempre que valores forem digitados no input message. Emitiremos esse evento para notificar os outros clientes quando um dos clientes estiver digitando uma mensagem.
+
+    // chat.js
+    ...
+
+    message.addEventListener('keypress', () => {
+        socket.emit('typing', name.value);
+    });
+
+Agora, vamos adicionar event listeners para eventos vindos do servidor. Fazemos isso utilizando o método on() do objeto socket.
+Vamos começar pelo event listener para a mensagem vinda do servidor, e depois exibir a mensagem na janela do chat:
+
+    // chat.js
+    ...
+
+    socket.on('message', data => {
+        answer.innerHTML = '';
+
+        output.innerHTML += '<p><strong>' + data.name + ': </strong>' + data.message + '</p>';
+    });
+
+O método on() recebe como argumento uma string contendo o nome do evento (que poderá ser qualquer um definido pelo servidor) e uma callback que recebe como argumento os dados que vieram com o evento emitido.
+
+Adicione também um event listener para o evento keypress (digitando) e o exibimos:
+
+    // chat.js
+    ...
+
+    socket.on('typing', data => {
+        answer.innerHTML = '<p><em>' + data + ' is typing a message... </em></p>';
+    });
+
+Agora, no lado do servidor, no arquivo index.js, precisamos configurar os listeners que escutarão os eventos vindos do cliente, e uma vez que os receber, emitir para os clientes.
+
+    io.on('connection', socket => {
+        console.log('Made socket connection', socket.id);
+
+        // Recebe mensagem do cliente e a envia (emite) para os clientes
+        socket.on('message', data => {
+            io.sockets.emit('message', data);
+        });
+
+        // Lida com o evento 'typing' e o transmite para todos os clientes exceto o remetente
+        socket.on('typing', data => {
+            socket.broadcast.emit('typing', data);
+        });
+    });
+
+Para escutarmos os eventos vindos do cliente, utilizamos o método on() do objeto socket que recebe como argumento o nome do evento (que poderá ser qualquer um definido pelo cliente) e uma callback que recebe como argumento os dados que vieram com o evento emitido.
+Para emitirmos os eventos, utilizamos o método emit() do objeto sockets, que é uma propriedade do nosso objeto io, que é nosso servidor. Esse método recebe como argumento uma string com o nome do evento que queremos emitir (que pode ser qualquer um) e os dados que queremos enviar. Precisamos utilizar o objeto sockets do nosso servidor io em vez do socket recebido na callback porque precisamos emitir esse evento para todos os sockets do nosso servidor e não apenas para o socket do cliente que enviou a mensagem.
+Utilizamos também o método emit() do objeto broadcast que é uma propriedade no argumento socket da callback para emitir um evento para todos os clientes menos o cliente do socket atual.
+
+Por fim, escutamos o evento "disconnect" do nosso socket e imprimimos uma mensagem no console:
+
+    ...
+
+    io.on('connection', socket => {
+        ...
+
+        socket.on('disconnect', socket => {
+            console.log('Disconnected', socket.id);
+        });
+    });

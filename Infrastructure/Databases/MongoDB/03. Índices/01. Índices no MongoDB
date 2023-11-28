@@ -1,0 +1,17 @@
+Índices no MongoDB
+
+Criando Índices Únicos
+
+Quando você cria um documento, o MongoDB automaticamente cria um índice único utilizando o atributo _id. Entretanto, você pode precisar criar outros índices na sua collection e, para isso, a sintaxe é a seguinte:
+
+	db.collection_name.createIndex({ field: order });
+	
+Para criar mais de um índice basta adicionar um novo objeto ao createIndex:
+
+	db.collection_name.createIndex({ field_1: order }, { field_2: order });
+	
+Criando um Índice Composto
+
+Para criarmos um índice composto a sintaxe é a seguinte:
+
+	db.collection_name.createIndex({ field_1: order, field_2: order });

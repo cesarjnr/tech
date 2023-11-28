@@ -1,0 +1,5 @@
+Git Rebase
+
+Caso de Uso
+
+O motivo principal para rebasear é manter um histórico linear do projeto. Por exemplo, considere uma situação onde a branch master progrediu desde que você começou a trabalhar em uma branch feature. Você quer obter as últimas atualizações da branch master em sua branch feature, mas você quer manter o histórico da sua branch limpo. Isto dá o benefício posterior de um merge limpo da sua branch feature na branch master.

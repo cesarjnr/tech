@@ -1,0 +1,62 @@
+Debugger VSCode
+
+1. Com o projeto já aberto, clique no ícone de debug do VSCode. Na aba de debug, no canto superior direito, clique no ícone que representa uma seta para baixo e clique na opção "Add Configuration...". O VSCode consegue detectar automaticamente o tipo de projeto que está aberto no workspace e cria um arquivo de configuração base para a ferramenta de debug. O nome desse arquivo, por padrão, é launch.json.
+
+2. Existem 2 maneiras de utilizarmos a ferramenta de debug do VSCode:
+
+- Utilizando a própria ferramenta de debug para startar a aplicação. Fazemos isso apenas clicando no ícone de play que fica próximo de onde clicamos para criar o arquivo de configuração.
+- Utilizando os próprios comandos do terminal para startar a aplicação da maneira que fazemos normalmente quando estamos desenvolvendo. Dessa maneira, quando clicarmos no ícone de play, o debugger não vai startar a aplicação novamente, apenas se conectará a ela e funcionará da mesma maneira. Chamamos essa maneira de debug de "attach".
+
+Para utilizarmos o debugger da segunda maneira e realizar o attach precisamos realizar alguns passos adicionais:
+
+2.1. No script que você utiliza para startar aplicação, adicione a flag --inspect. Essa flag faz com que sua aplicação crie um canal de socket no momento em que starta, podendo se comunicar com qualquer ferramenta de debug.
+
+2.2. Agora, precisamos fazer o debugger do VSCode se conectar a esse canal de socket. Fazemos isso adicionando as seguintes configurações em nosso arquivo launch.json:
+
+	{
+	  "version": "0.2.0",
+	  "configurations": [
+	    {
+	      "type": "node",
+	      "request": "attach",
+	      "protocol": "inspector",
+	      "restart": true,
+	      "name": "Launch Program",
+	      "skipFiles": [
+	        "<node_internals>/**
+	      ]
+	    } 
+	  ]
+	}
+
+O que fizemos foi alterar a propriedade "request" de "launch" para "attach", remover a propriedade "program" e adicionar a propriedade "protocol" com o valor "inspector".
+
+3. Agora basta adicionar os breakpoints ao longo da sua aplicação para debugá-la. Vale lembrar que o breakpoint não permite que a linha de código em que ele está inserido seja executada. A aplicação executa até a linha na qual o breakpoint se encontra, não incluindo-a.
+
+Ações do Debugger
+
+Continue (F5) - Faz com que o código continue sua execução até encontrar o próximo breakpoint ou o fim da execução do programa.
+
+Step Over (F10) - Passa para o próximo trecho de código a ser executado. Se você estiver utilizando libs externas ele vai executar inclusive os trechos de código que compõem as bibliotecas. Então costuma ser útil apenas quando os próximos trechos de código são do nosso próprio código.
+
+Step Into (F11) - Passa para a próxima linha de código a ser executada. Diferente da opção acima que executa um escopo, essa opção executa linha após linha.
+
+Step Out (Shift + F11) - Retorna para a linha de código anterior.
+
+Restart (Ctrl + Shift + F5) - Remove o attach, desconetando o debugger do socket atual.
+
+Stop (Shift + F5) - Finaliza a ferramenta de debugger.
+
+Workspace do Debugger
+
+Watch
+
+Nos permite incluir variáveis as quais queremos observar alterações. Basta clicar no ícone de + e inserir o nome da variável desejada.
+
+Breakpoints
+
+É onde ficam localizados os nossos breakpoints. Existem duas opções adicionais "All Exceptions" e "Uncaught Exceptions", que podemos utilizar para adicionar breakpoints em runtime nas exceções que acontecem. Basicamente, o código vai ser parado no local em que ocorrer uma exceção.
+
+Configurações Adicionais
+
+"restart" (boolean) - informa ao debugger se o mesmo deve ou não se conectar à nova instância da aplicação quando a mesma é reinicializada.

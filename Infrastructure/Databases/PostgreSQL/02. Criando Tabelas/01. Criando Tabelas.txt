@@ -1,0 +1,50 @@
+Criando Tabelas
+
+O comando para criar uma tabela no Postgres é o seguinte:
+
+	CREATE TABLE table_name (
+	  Column name + data type + constrants, if any
+	);
+
+Dentro dos parênteses, você pode criar quantas colunas quiser.
+Vamos ver o exemplo da criação de uma tabela de pessoas:
+
+	CREATE TABLE person (
+	  id int,
+	  first_name VARCHAR(50),
+	  last_name VARCHAR(50),
+	  gender VARCHAR(6),
+	  date_of_birth DATE
+	);
+
+Você pode consultar os tipos de dados presentes no Postgres em sua documentação.
+
+Criando Tabelas com Constraints
+
+Para adicionar constraints nas colunas da tabela, os inserimos após o tipo da coluna. Veja um exemplo:
+
+	CREAT TABLE person (
+	  id BIGSERIAL NOT NULL PRIMARY KEY,
+	  first_name VARCHAR(50) NOT NULL,
+	  last_name VARCHAR(50) NOT NULL,
+	  gender VARCHAR(6) NOT NULL,
+	  date_of_birth DATE NOT NULL
+	);
+
+Listando as Tabelas Criadas
+
+Para listar as tabelas criadas no banco de dados é muito simples, basta digitar o seguinte comando:
+
+	\d
+
+Você pode ainda descrever uma tabela específica adicionando o nome da tabela após o comando:
+
+	\d person
+
+d significa describe.
+
+Excluindo Tabelas
+
+Para excluir uma tabela, inserimos apenas o comando abaixo:
+
+	DROP TABLE table_name;

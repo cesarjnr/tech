@@ -1,0 +1,28 @@
+Desenvolvendo Dentro de um Contêiner
+
+A extensão Visual Studio Code Remote - Containers nos permite utilizar um contêiner do Docker como ambiente de desenvolvimento. Ela nos permite abrir qualquer diretório dentro de um contêiner e utilizar o conjunto de ferramentas do Visual Studio Code. Um arquivo chamado devcontainer.json em seu projeto diz ao VS Code como acessar (ou criar) um contêiner de desenvolvimento. Este contêiner pode ser utilizado para rodar uma aplicação, bibliotecas, ou compiladores/interpretadores necessários para trabalhar com uma base de código.
+
+Instalação
+
+1. Instale a extensão "Remote - Containers".
+
+2. Com a extensão instalada, você verá o seguinte ícone no canto inferior esquerdo:
+
+remote-containers image here
+
+Clicar no ícone trará os comandos da extensão.
+
+Anexando o VS Code a um Contêiner em Execução
+
+Para anexarmos o VS Code a um contêiner em execução precisamos clicar no ícone da extensão que vimos no tópico anterior e selecionar o comando "Remote Containers - Attach to Running Container...". Após clicarmos nesse comando, o VS Code abrirá uma nova janela e dará início à conexão com o contêiner.
+Uma vez que a conexão for realizada, veremos que o ícone da extensão no canto inferior esquerdo agora terá uma mensagem como a seguinte:
+
+remote-containers-02 image here
+
+Agora podemos verificar se o ambiente do VS Code está de fato conectado ao contêiner. Podemos fazer isso utilizando a linha de comando para verificar a versão do Node e do npm instalada no contêiner por exemplo:
+
+remote-containers-03 image here
+
+Fechando uma Conexão
+
+Podemos finalizar uma sessão no contêiner e retornar ao VS Code clicando no ícone da extensão e selecionando o comando "Close Remote Connection".

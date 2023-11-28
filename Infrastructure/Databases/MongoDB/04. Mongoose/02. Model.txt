@@ -1,0 +1,120 @@
+Model
+
+Schema é a estrutura do que os recursos terão dentro do banco de dados.
+Definimos um schema da seguinte maneira:
+
+	// src/app/models/Dev.js
+	const mongoose = require('mongoose');
+
+	const DevSchema = new mongoose.Schema({
+	  name: String,
+	  techs: [String]
+	});
+
+	module.exports = mongoose.model('Dev', DevSchema);
+
+No exemplo acima, estamos exemplificando a criação de um model em uma aplicação Express:
+
+- Importamos a lib mongoose.
+- Criamos uma constante chamada DevSchema. Atribuímos a ela o resultado da invocação do construtor de mongoose.Schema.
+- Passamos para esse construtor um objeto contendo os campos que queremos ter em nossa tabela no banco. As chaves são os nomes dos campos e os seus valores são os tipos que temos disponível.
+- Todos os campos, exceto o último, serão do tipo string. O campo techs será um array de strings.
+- Invocamos mongoose.model() para criar o model e exportamos seu retorno.
+- O 1º parâmetro de model() é do tipo string e recebe o nome que será utilizado no model.
+- O 2º parâmetro de model() é do tipo Schema e recebe o schema a ser utilizado no model.
+- O 3º e o 4ª parâmetro são opcionais e você pode verificar a documentação para saber mais a respeito.
+- Exportamos o retorno de mongoose.model(), que será o model criado.
+
+Trabalhando com Geolocalização
+
+Para definirmos campos onde os valores serão dados de geocalização temos algumas configurações a mais para fazer.
+Primeiro, como não existe um tipo já pronto no Mongo que lide com dados de geolicalização, precisaremos criar um por conta própria. Sendo assim, dentro do diretório models, criamos um diretório chamado utils contendo o arquivo PointSchema.js:
+
+	// src/app/models/utils/PointSchema.js
+	const mongoose = require('mongoose');
+
+	const PointSchema = new mongoose.Schema({
+	  type: {
+	    type: String,
+	    enum: ['Point']
+	    required: true
+	  },
+	  coordinates: {
+	    type: [Number],
+	    required: true
+	  }
+	});
+
+	module.exports = PointSchema;
+
+Explicação do código acima:
+
+- O que vamos fazer é simplesmente criar um Schema personalizado para que possamos utilizar como tipo nos campos das nossas collections. Criamos o schema PointSchema.
+- Quando queremos passar outras configurações para campo além do tipo dele, podemos passar um objeto. Nesse objeto temos acesso à diversas propriedades que podemos utilizar para configurar nossos campos, você pode consultar todas elas na documentação.
+- type recebe o tipo que o campo terá.
+- enum recebe um array que contém os únicos valores que o campo pode receber.
+- required recebe um booleano informando se o campo deve ou não ser obrigatório.
+- Em PointSchema criamos 2 campos: type e coordinates.
+- O campo type será do tipo String, só pode receber o valor 'Point' e será obrigatório.
+- O campo coordinates será um array de números e será obrigatório.
+- Exportamos nosso schema PointSchema.
+
+Agora precisamos importá-lo em nosso model e utilizá-lo.
+
+	// src/app/models/Dev.js
+	...
+	const PointSchema = require('./utils/PointSchema');
+
+	const DevSchema = new mongoose.Schema({
+	  ...,
+	  location: {
+	    type: PointSchema,
+	    index: '2dsphere'
+	  }
+	});
+
+	...
+
+Toda vez que lidamos com geolocalização precisamos criar um índice dentro do nosso model, que auxiliará posteriormente nas buscas. Quando lidamos com ponto de latitude e longitude, utilizamos o índice 2dsphere. Definimos um índice para o campo na propriedade index.
+
+Agora vamos ver o processo para recebermos, tratarmos e persistimos esse tipo de dado no banco.
+Imagine o seguinte corpo de uma requisição POST para esse model:
+	
+	// POST Request Body
+	{
+	  name: 'César',
+	  techs: ['Node.js', 'ReactJS', 'React Native'],
+	  latitude: -22.7856374,
+	  longitutde: -43.281157
+	}
+
+Em nosso controller:
+
+	// src/app/controllers/DevController.js
+	...
+
+	class DevController {
+	  async store(req, res) {
+	    const { name, techs, latitude, longitude } = req.body;
+	
+	    const location = {
+	      type: 'Point',
+	      coordinates: [longitude, latitude]
+	    };
+
+	    const dev = await new DevService().store({
+	      name, techs, location
+	    });
+
+	    return res.json(dev);
+	  }
+	}
+
+	module.exports = new DevController();
+
+Explicação do código acima:
+
+- Desestruturamos o corpo da requisição e pegamos as propriedades.
+- Os valores de latitude e longitude serão persistidos na propriedade location que é do tipo PointSchema que criamos anteriormente. Sabemos que PointSchema possui as propriedades type e coordinates. type só pode receber a string 'Point' e coordinates recebe um array de números.
+- Então criamos um objeto location e definimos esses valores. Lembrando que no Mongo precisamos passar a longitude primeiro.
+- Por fim, enviamos um objeto com essas propriedades para o método store() de DevService que irá persistir esses dados no banco.

@@ -1,0 +1,219 @@
+GraphQL
+
+Operações e Documentos
+
+Para se comunicar com um serviço GraphQL, enviamos um documento de texto escrito em uma query language do GraphQL. Um documento do GraphQL contém uma ou mais operações, e estas operações podem ser ou de leitura ou de escrita. Utilizamos queries para operações de leitura e mutations para operações de escrita.
+
+Variáveis
+
+Veja a seguinte query onde buscamos por um usuário em um servidor:
+
+    query UserPosts {
+        user(userId: 42) {
+            name
+            email
+            posts {
+                content
+            }
+        }
+    }
+
+A query UserPosts funciona para um único usuário, e é por isso que precisamos passar um userId para ela. Entretanto, nós inserimos o valor de userId diretamente na própria string da query. Isso torna a query não utilizável para outros usuários, ou seja, teríamos que escrever outra query somente para passar um valor diferente para userId. Para tornar essa query reutilizável, precisamos torná-la genérica utilizando uma variável do GraphQL como o input user:
+
+    query UserPosts($userId: Int!) {
+        user(userId: $userId) {
+            name
+            email
+            posts {
+                content
+            }
+        }
+    }
+
+Perceba como primeiro definimos a variável no topo da nossa operação de consulta ($userId: Int!). Isto define o escopo da variável $userId para que possamos utilizá-lo em qualquer lugar dentro da nossa operação de consulta. O tipo da variável $userId é Int! (inteiro não nulo).
+Para executar a query genérica, fornecemos um objeto JSON para o input variables que passamos para o executor da nossa query GraphQL junto com o input da query. Por exemplo, para executar a query com o valor 42 para a variável $userId, podemos enviar este valor para variables:
+
+    {
+        "userId": 42
+    }
+
+Para uma interface HTTP, nossa requisição da operação agora pode ser enviada utilizando:
+
+    /graphql?query={...}&variables={...}
+
+Utilizar variáveis permite os clientes evitarem qualquer tipo de operação de construção de query em tempo de execução. O valor 42 provavelmente virá de uma fonte diferente, como a localização na URL. Em vez de construir a string da query utilizando concatenação de string para essa variável, podemos apenas passar a variável para o executor junto com a query genérica e reusável.
+As variáveis têm que ser únicas em uma única operação, mas podemos utilizar o mesmo nome de variável em operações diferentes. Se definirmos uma variável para uma operação, essa variável tem que ser utilizada pelo menos uma vez nessa operação. O GraphQL disparará um erro se uma variável for definida mas não utilizada.
+
+Diretivas
+
+Às vezes, utilizar argumentos do campo para customizar o comportamento do motor de execução do servidor GraphQL não é suficiente. Por exemplo, se tivéssemos uma variável em nossa aplicação, e quiséssemos que o servidor GraphQL customizasse a estrutura da resposta baseado nesta variável? Quando uma variável é true, queremos que certos campos sejam omitidos da resposta.
+Podemos fornecer opções para alterar a execução do GraphQL em tempo de execução utilizando diretivas. Diretivas têm três características:
+
+- Um nome único para identificá-las.
+- Uma lista de argumentos, assim como os campos. Os argumentos podem aceitar valores de qualquer tipo de entrada.
+- Uma lista de localizações onde o uso da diretiva é aceito. As diretivas podem ser utilizadas em várias localizações em um documento do GraphQL, incluindo uma operação, um fragmento, ou um campo. Cada diretiva define sua lista de localizações aceitas.
+
+Existem duas diretivas principais embutidas que devem ser suportadas por um servidor GraphQL:
+
+- @include, que aceita um argumento if booleano, e orienta o executor do GraphQL para incluir um campo um fragmento apenas quando o argumento if é true:
+
+    field @include(if: $BooleanValue)
+
+- @skip, que aceita um argumento if booleano, e orienta o executor do GraphQL a pular um campo ou fragmento quando o argumento if é true:
+
+    field @skip(if: $BooleanValue)
+
+As diretivas são comumente utilizadas com variáveis para customizar a resposta baseada nos valores das variáveis. Por exemplo, em nossa query UserPosts, podemos ter uma variável $showEmail que pode ser true ou false. Queremos que o servidor GraphQL apenas envie a informação de email quando $showEmail é definido para true. Quando $showEmail é false, queremos que o servidor responda com o username do usuário:
+
+    query UserPosts($userId: Int!, $showEmail: Boolean!) {
+        user(userId: $userId) {
+            name
+            email @include(if: $showEmail)
+            username @skip(if: $showEmail)
+            posts {
+                postId
+                content
+            }
+        }
+    }
+
+Quando executamos esta query com $showEmail definido para true (na propriedade variables), o servidor GraphQL incluirá o email do usuário e não incluirá o username do usuário. Quando executamos esta query com $showEmail definido para false, o servidor incluirá o username do usuário mas não o email.
+Podemos utilizar diretivas com campos complexos também. Por exemplo, para controlar a seção de posts de cada usuário, podemos fazer isto:
+
+    query UserPosts($userId: Int!, $showPosts: Boolean!) {
+        user(userId: $userId) {
+            name
+            email
+            posts @include(if: $showPosts) {
+                postId
+                content
+            }
+        }
+    }
+
+Aliases
+
+Às vezes, os dados expostos pelo servidor podem ter nomes de propriedade diferentes daqueles que queremos utilizar na UI. Por exemplo, vamos presumir que nossa UI representa uma escola onde cada usuário representa um aluno e representa a lista de posts de um usuário como comentários, e para cada comentário, a UI utiliza um commentId em vez de um postId.
+Aqui está o JSON ideal que esta UI pode consumir:
+
+    {
+        "student": {
+            "comments": [
+                {
+                    "commentId": 1,
+                    "content": "..."
+                },
+                {
+                    "commentId": 2,
+                    "content": "..."
+                }
+            ]
+        }
+    }
+
+Temos os mesmos dados aqui mas com nomes de propriedades levemente diferentes. Em vez de processarmos a resposta original no lado do cliente e copiá-la para uma nova estrutura adaptada para nossa UI, podemos utilizar os aliases de campo do GraphQL para instruir o servidor GraphQL a responder com seus dados utilizando nomes de propriedade diferentes. Podemos utilizar aliases em qualquer campo para customizar sua aparência na resposta:
+
+    query UserResponse {
+        student: user(userId: 42) {
+            comments: posts {
+                commentId: postId
+                content
+            }
+        }
+    }
+
+A query UserResponse está pedindo pelos mesmos dados mas utiliza aliases para renomear alguns campos da resposta. O servidor responderá com o exato JSON que a UI quer utilizar.
+Podemos também utilizar aliases para pedir o mesmo campo várias vezes:
+
+    query TwoUsers {
+        firstUser: user(userId: 42) {
+            posts {
+                postId
+                content
+            }
+        }
+        secondUser: user(userId: 43) {
+            posts {
+                postId
+                content
+            }
+        }
+    }
+
+Os aliases que um cliente especifica em uma query GraphQL é utilizados na resposta do servidor. Ao utilizar esta feature, os clientes tem uma camada extra de controle sobre a resposta, e não precisam realizar nenhum processamento extra nos dados recebidos antes de poderem utilizá-los.
+
+Fragments
+
+No último exemplo, repetimos a seção posts na query TwoUsers duas vezes, uma para cada usuário. Se mais tarde decidirmos pedir por um campo extra em cada objeto de post, teremos que alterar dois lugares em nossa query, o que não é ideal.
+Podemos utilizar os fragments do GraphQL para refatorar esta repetição e compor nossa query principal utilizando um pequeno fragmento de query que representa a seção posts e seus campos:
+
+    query TwoUsers {
+        firstUser: user(userId: 42) {
+            ...PostList
+        }
+        secondUser: user(userId: 43) {
+            ...PostList
+        }
+    }
+
+    fragment PostList on User {
+        posts {
+            postId
+            content
+            date
+        }
+    }
+
+Conseguimos extrair a informação repetida e representá-la com o fragment PostList. Um fragment é apenas uma operação parcial; podemos utilizá-lo por conta própria, mas podemos utilizá-lo e reutilizá-lo dentro de uma operação completa. Para utilizar o fragmento em uma operação, o prefixamos com três pontos.
+O operador de três pontos é conhecido como spread operator. Quando um servidor GraphQL vê três pontos seguidos por um nome em qualquer lugar de uma query GraphQL, ele procurará um fragment definido utilizando o mesmo nome, e irá espalhar o conteúdo do framgent no lugar de seu nome com três pontos na query. O conteúdo do fragment tem que caber no lugar que ele é utilizado. É por isso que nosso fragment, que foi definido como um objeto de post, pode ser utilizado apenas dentro de um grupo de seleção que expande um objeto de post.
+Query fragments normalmente mapeiam para os componentes de uma UI. Uma possível UI para representar estes dados de exemplo pode ser um componente User, e esse componente pode conter outro componente que representa uma lista de posts desse usuário. Nosso fragment PostList pode ser utilizado para representar o requisito de dados para o componente PostList da UI. Isto permite o isolamento dos dados que cada sub-componente da nossa UI está pedindo, e também permite múltiplas views utilizarem o mesmo fragmento sem qualquer lógica de duplicação.
+Podemos utilizar variáveis nos fragments. Quando um fragment é utilizado por uma operação, ele recebe acesso às variáveis definidas por essa operação.
+Vaomos criar uma variável $showPostId e utilizar no fragment que definimos para PostList:
+
+    query TwoUsers($showPostId: Boolean!) {
+        firstUser: user(userId: 42) {
+            ...PostList
+        }
+        secondUser: user(userId: 43) {
+            ...PostList
+        }
+    }
+
+    fragment PostList on Post {
+        posts {
+            postId @include(if: $showPostId)
+            content
+            date   
+        }
+    }
+
+Se o fragment utiliza uma variável, então a variável tem que ser definida por qualquer operação que usa o fragment. Utilizar esse fragment em uma operação que não define o nome da variável compatível resultará em um erro.
+Podemos também utilizar fragments diretamente inline sem dar um nome a eles:
+
+    query UserOrPost {
+        node(nodeId: 42) {
+            content
+            date
+            ... on User {
+                nodeId: userId
+            }
+            ... on Post {
+                nodeId: postId
+            }
+        }
+    }
+
+Inline fragments são úteis dentro de um type que implementa múltiplos objetos, como o campo node na query UserOrPost. O campo node é parte das features do Relay e pode representar qualquer objeto no schema GraphQL. Nesta query, estamos presumindo que um node pode ser um usuário ou um post. Quando o node é um usuário, queremos ler o userId e utilizá-lo como o nodeId, e quando é um post, queremos que postId seja o nodeId.
+Inline fragments também pode ser utilizados para aplicar uma diretiva para um grupo de campos. Neste formato, podemos omitir a seção on Type e presumir que corresponda ao contexto em anexo.
+Por exemplo, dado um objeto de usuário que tem as propriedades posts e likes, podemos inclui-las condicionalmente utilizando a variável $showStats desta maneira:
+
+    query User($showStats: Boolean!) {
+        user(userId: 42) {
+            name
+            email
+            ... @include(if: $showStats) {
+                posts
+                likes
+            }
+        }
+    }

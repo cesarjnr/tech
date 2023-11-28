@@ -1,0 +1,115 @@
+kubectl
+
+Definição
+
+Kubectl é uma ferramenta de linha de comando que nos permite interagir com um cluster. É ela que nos permite enviar requisições para o kube-apiserver.
+
+kubectl image here
+
+Comandos
+
+- version: retorna a versão do kubernetes instalada no client e no servidor.
+
+	kubectl version
+
+- get nodes: retorna o status dos nodes do cluster.
+
+	kubectl get nodes
+
+- get pod: retorna os pods rodando no cluster.
+
+	kubectl get pod
+	
+- get services: retorna os services do cluster.
+
+	kubectl get services
+	
+- create: cria recursos do Kubernetes.
+
+	kubectl create RESOURCE
+		
+A palavra RESOURCE deve ser substituída pelo recurso a ser criado. Você pode utilizar a flag -H com o comando create para ver os componentes que podem ser criados com o comando create:
+
+	kubectl create -H
+
+- get deployment: retorna o status dos deployments que foram feitos.
+
+	kubectl get deployment
+	
+- get replicaset: retorna uma lista das réplicas dos Pods.
+
+	kubectl get replicaset
+
+Cada item retornado é uma réplica referente a um Pod. Esse item traz as informações referentes a quantos Pods que deveriam estar rodando (DESIRED), quantos Pods estão rodando (CURRENT) e quantos Pods ainda estão prontos para rodar (READY).
+Essas réplicas podem ser criadas no momento de criação de um Deployment passando o parâmetro --replicas. Por padrão, apenas 1 réplica é criada.
+
+- edit: edita recursos do Kubernetes.
+
+	kubectl edit RESOURCE
+	
+A palavra RESOURCE deve ser substituída pelo recurso a ser editado.
+	
+- logs: retorna os logs de uma aplicação rodando dentro de um Pod.
+
+	kubectl logs POD-NAME
+	
+A palavra POD-NAME deve ser substituída pelo nome do Pod que está rodando a aplicação.
+
+- describe pod: retorna todas as informações referentes a um Pod.
+
+	kubectl describe POD-NAME
+	
+A palavra POD-NAME deve ser substituída pelo nome do Pod.
+
+- exec: nos permite executar comandos no terminal do Pod.
+
+	kubectl exec POD-NAME --
+	
+A palavra POD-NAME deve ser substituída pelo nome do Pod. O comando a ser executado e seus possíveis argumentos devem ser inseridos após os dois hífens.
+
+- delete: deleta recursos do Kubernetes.
+
+	kubectl delete RESOURCE
+	
+A palavra RESOURCE deve ser substituída pelo recurso a ser deletado.
+
+- apply: submete um arquivo de configuração de recursos ao Kubernetes.
+
+	kubectl apply -f path/to/file
+	
+Precisamos utilizar o parâmetro -f e passar como argumento o caminho onde se encontra esse arquivo.
+Caso o caminho especificado não contenha o arquivo o Kubernetes automaticamente criará um com as configurações padrões.
+Geralmente os arquivos de configuração são do tipo YAML.
+	
+Criando Pods
+
+Como vimos anteriormente, no Kubernetes nós não criamos Pods diretamente. Nós utilizamos os componentes Deployment e Stateful Set para criá-los.
+Para criarmos um Pod, devemos utilizar o comando create passando o recurso Deployment:
+
+	kutectl create deployment NAME --image=image
+	
+A palavra chave NAME deve ser substituída pelo nome a ser dado ao Pod.
+O parâmetro --image deve receber o nome da imagem a ser utilizada para criar o Pod.
+Então se quiséssemos, por exemplo, executar um Pod do nginx, precisaríamos do seguinte comando:
+
+	kubectl create deployment nginx-depl --image=nginx
+
+Editando Pods
+
+Para editarmos as configurações de um Pod, precisamos na verdade editar as configurações do Deployment que o originou. Para isso, utilizamos o comando edit passando o recurso Deployment:
+
+	kubectl edit deployment NAME
+	
+A palavra chave NAME deve ser substituída pelo nome do Deployment.
+O comando acima gerará um arquivo de configuração YAML para esse Deployment com todas as configurações que foram definidas para ele pelo Kubernetes. Basta modificarmos qualquer uma dessas configurações e salvar esse arquivo. Após isso, todos os Pods que estavam rodando a partir desse Deployment serão terminados e novos Pods serão executados.
+Utilizando o Deployment criado no exemplo anterior:
+
+	kubectl edit deployment nginx-depl
+	
+Deletando Pods
+
+Assim como na edição, precisamos deletar o Deployment para que os Pods possam ser deletados. Para isso, utilizamos o comando delete passando o recurso Deployment:
+
+	kubectl delete deployment NAME
+	
+Após o Deployment ser deletado, todos os Pods que estavam executando a partir dele serão finalizados.

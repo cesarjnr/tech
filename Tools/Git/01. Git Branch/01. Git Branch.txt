@@ -1,0 +1,13 @@
+Git Branch
+
+Criando uma Nova Branch a Partir de uma Branch Específica
+
+1. Vá para a branch a partir da qual você deseja gerar a nova branch.
+
+	git checkout base_branch
+	
+2. Crie a nova branch utilizando o seguinte comando:
+
+	git checkout -b new_branch base_branch
+	
+O comando acima criará a branch new_branch a partir da branch base_branch.

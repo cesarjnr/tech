@@ -1,0 +1,62 @@
+Resolvers com express-graphql
+
+Os Resolvers são funções definidas por nós mesmos, que são basicamente um handler para cada entry point do nosso schema, responsáveis por armazenar a lógica que lida com as queries recebidas pelos schemas.
+A definição dos resolvers depende da linguagem e da biblioteca utilizada.
+Utilizando a lib express-graphql, definimos os resolvers na chave rootValue da função graphqlHttp fornecida por express-graphql:
+	
+	const graphqlHttp = require('express-graphql');
+	const { buildSchema } = require('graphql');
+
+	graphqlHttp({
+	  schema: buildSchema(`
+	    type RootQuery {
+	      events: [String!]!
+	    }
+
+	    type RootMutation {
+	      createEvent(name: String): String
+	    }
+
+	    schema {
+	      query: RootQuery
+	    }
+	  `),
+	  rootValue: {
+	    events: () => {
+	      return ['Romantic Cooking', 'Sailing', 'All-Night Coding']
+	    },
+	    createEvent: (args) => {
+	      const { name } = args;
+
+	      return name;
+	    }
+	  }
+	});
+
+Sempre definimos a chave do resolver com o mesmo nome do entry point onde queremos utilizar esse resolver. No exemplo acima, para a query events definimos uma chave events em rootValue que corresponderá ao resolver para esse entry point. A mesma coisa para o mutation createEvent.
+O valor dessas chaves sempre será uma arrow function. O corpo dessas funções será a implementação do nosso resolver para aquele entry point. Geralmente é onde realizamos as chamadas aos nossos services para nos retornar dados do banco de dados, etc. No exemplo acima estamos retornando apenas retornando valores já que não possuímos nenhum banco de dados para buscar ou persistir dados.
+Caso esses entry points recebam argumentos, temos acesso aos mesmos em um objeto passado como parâmetro para as nossas funções resolvers. Por convenção, nomeamos esse parâmetro como args.
+Os resolvers também possuem um 2º parâmetro onde recebem o objeto req da requisição.
+
+Retornando Objetos
+
+A mágica do GraphQL acontece quando retornamos objetos, pois nosso resolver pode retornar um objeto com diversas propriedades aninhadas, mas o client pode selecionar quais propriedades desse objeto ele quer que seja retornada, utilizando a linguagem de query do GraphQL.
+
+	...
+	rootValue: {
+	  user: () => ({
+	    name: 'César',
+	    email: 'cesar.jnr@hotmail.com',
+	    age: 24,
+	    address: {
+	      street: 'Rua Quinze de Novembro',
+	      neighborhood: 'Vila São Luís',
+	      city: 'Duque de Caxias',
+	      state: 'RJ',
+	      country: 'Brazil'
+	    }
+	  })
+	}
+	...
+
+No exemplo acima, nosso resolver user retorna um objeto com todas as informações referentes a um usuário. Porém, quando um client faz uma requisição para o nosso servidor GraphQL, ele pode selecionar quais dessas propriedades ele deseja que sejam retornadas , utilizando a linguagem de query do GraphQL, e o GraphQL é quem fica responsável por extrair somente essas propriedades do objeto retornado pelo resolver.

@@ -1,0 +1,110 @@
+Arquivo de Configuração YAML
+
+Podemos criar arquivos de configuração e submetê-los ao Kubernetes em vez de utilizarmos o comando create para criar recursos. Vamos ver em detalhes sua sintaxe:
+
+	apiVersion: apps/v1
+	kind: Deployment
+	metadata:
+	  name: nginx-development
+	spec:
+
+- apiVersion (string): cada recurso possui uma versão diferente de API. Consulte a documentação para saber o valor para o recurso que você deseja criar.
+- kind (string): recurso que está sendo criado.
+- metadata (objeto): onde configuramos os metadados do recurso.
+- metadata.name (string): nome do recurso.
+- spec (objeto): especificações do recurso, é basicamente onde colocamos todas configurações para a submissão do recurso. Os atributos permitidos aqui irão variar de acordo com o tipo de recurso que está sendo configurado (kind).
+
+É uma boa prática armazenar esse arquivo junto do código-fonte da sua aplicação.
+
+Atributos de Especificação de um Deployment
+
+Como vimos anteriormente, os atributos permitidos na chave spec vão depender do recurso que está sendo criado. Vamos ver alguns atributos permitidos na criação de um Deployment:
+
+	spec:
+	  replicas: 2
+	  selector:
+	  template:
+	    metadata:
+	    spec:
+	      replicas: 2
+	      containers:
+	        - name: nginx
+	          image: nginx:1.16
+	          ports:
+	            - containerPort: 8080
+
+- template.metadata (objeto): metadados do Pod. Como Deployments criam Pods, esse atributo refere-se aos metadados do Pod.
+- template.spec (objeto): especificações do Pod. Como Deployments criam Pods, esse atributo refere-se às especificações do Pod.
+- template.spec.replicas: quantidade de réplicas do Pod a serem executadas.
+- template.spec.containers (array de objetos): configuração dos contêineres que rodarão nos Pods.
+- template.spec.containers.name (string): nome do contêiner.
+- template.spec.containers.image (string): imagem que o contêiner foi baseado.
+- template.spec.containers.ports (array de objetos): configuração das portas usadas pelo contêiner.
+- template.spec.containers.ports.containerPort: porta que o contêiner será exposto.
+
+Labels
+
+O atributo metadata nos permite utilizar um atributo chamado labels. Esse atributo é utilizado para identificar um objeto no Kubernetes.
+
+	# Deployment
+	apiVersion: apps/v1
+	kind: Deployment
+	metadata:
+	  name: my-app-deployment
+	spec:
+	  replicas: 2
+	  template:
+	    metadata:
+	      labels:
+	        app: my-app
+	  spec: ...
+	  
+No exemplo acima, criamos 1 label para o Pod que será executado pelo Deployment. Agora, podemos utilizar essa label para conectar este Pod a um Service por exemplo:
+	
+	# Service
+	apiVersion: v1
+	kind: Service
+	metadata:
+	  name: my-app-service
+	spec:
+	  selector:
+	    app: my-app
+	    
+Para conectarmos os recursos do Kubernetes através das labels utilizamos o atributo selector. Esse atributo faz parte do objeto spec e recebe um objeto. Esse objeto receberá as labels a serem utilizadas para buscar um recurso do Kubernetes e conectar no recurso atual.
+No exemplo acima, estamos buscando um recurso que possua a label app com o valor my-app. Dessa maneira, o Service encontrará o Pod e conseguirá se conectar a ele.
+O selector funciona como o operador "E", buscando todos os recursos que possuam todas as labels informadas. Isso é, o recurso a ser buscado precisa conter todas as labels com os respectivos valores especificadas no selector. Vamos ver outro exemplo:
+
+	# Service
+	...
+	spec:
+	  selector:
+	    app: my-app
+	    env: prod
+
+No exemplo acima, o Service não conseguirá encontrar o Pod executado pelo Deployment pois ele realizará uma busca por recursos onde os recursos possuam ambas as labels (app e env) com os valores my-app e prod, respectivamente. Como o Pod não possui a label env, ele não será selecionado. Da mesma maneira, caso ele possuísse a label env mas com um valor diferente de prod, ele também não seria selecionado.
+
+matchLabels
+
+Vimos anteriormente como conectar um Service a um Pod utilizando as propriedades labels e selector. Precisamos também realizar essa conexão entre um Deployment e seus respectivos Pods, visto que isso não é automático e um Deployment precisa saber quais Pods ele gerencia. Apesar de declararmos isso na spec do Deployment, estamos na verdade informando isso ao componente ReplicaSet, que é quem gerencia um Pod e suas réplicas.
+Aqui devemos utilizar a propriedade matchLabels logo após o selector para realizar a seleção de uma maneira diferenciada:
+
+	# Deployment
+	apiVersion: apps/v1
+	kind: Deployment
+	metadata:
+	  name: my-app-deployment
+	  labels:
+	    my-deployment: my-deployment
+	spec:
+	  replicas: 2
+	  selector:
+	    matchLabels:
+	      app: my-app
+	      app2: my-app-2
+	  template:
+	    metadata:
+	      labels:
+	        app: my-app
+	    spec: ...
+	    
+O selector em conjunto com o matchLabels funciona como o operador "OU", buscando todos os recursos que possuam ao menos a label informada. Isso é, o recurso a ser buscado precisa ter pelo menos a label com o respectivo valor informado no matchLabels. No exemplo acima, mesmo que estejamos passando uma segunda label chamado app2 com o valor my-app-2, o Pod que especificamos no template será selecionado pois ele possui ao menos a label app com o valor my-app.

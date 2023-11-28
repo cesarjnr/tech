@@ -1,0 +1,490 @@
+Connections
+
+Esta especificação visa fornecer uma opção para os clientes GraphQL lidarem de forma consistente com melhores práticas de paginação com suporte para metadados relacionados por meio de um servidor GraphQL. Esta especificação propõe chamar este padrão de "Connections" e expô-los de uma maneira padrão.
+Na consulta, o modelo connection fornece um mecanismo padrão para dividr e paginar o conjunto de resultados.
+Na resposta, o modelo connection fornece uma maneira padrão de fornecer cursores, e uma maneira de dizer ao cliente quando mais resultados estão disponíveis.
+Um exemplo disso é a seguinte consulta:
+
+    {
+        user {
+            id
+            name
+            friends(first: 10, after: "opaqueCursor") {
+                edges {
+                    cursor
+                    node {
+                        id
+                        name
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                }
+            }
+        }
+    }
+
+Neste caso, friends é uma connection. Essa consulta demonstra as quatro features descritas acima:
+
+- Dividir é feito com o argumento first de friends. Isto pede a connection para returnar 10 friends.
+- Paginar é feito com o argumento after de friends. Passamos um cursor, então pedimos ao servidor para retornar friends depois desse cursor.
+- Para cada edge na connection, pedimos um cursor. Este cursor é uma string opaca, e é precisamente o que passaríamos para o argumento after para paginar, começando depois deste edge.
+- Pedimos hasNextPage; isso nos dirá se existem mais edges disponíveis, ou se alcançamos o fim desta connection.
+
+Tipos Reservados
+
+Um servidor GraphQL que está em conformidade com esta especificação deve reservar certos types e nomes de types para suportar o modelo de paginação de connections. Em particular, esta especificação cria orientações para os seguintes types:
+
+- Qualquer objeto cujo nome termina em "Connection".
+- Um objeto chamado pageInfo.
+
+Connection Types
+
+Qualquer type cujo nome termina em "Connection" é considerado por esta especificação para ser um Connection Type. Connection types devem ser um "objeto" como definido na seção "Type System" da especificação GraphQL.
+
+- Campos
+
+Connection types devem ter campos chamados edges e pageInfo. Eles podem ter campos adicionais relacionados a connection, como o designer do schema bem entender.
+
+- Edges
+
+Um "Connection Type" deve conter um campo chamado edges. Este campo deve retornar um tipo de lista que envolve um edge type, onde os requisitos de um edge type são definidos na seção "Edge Types" abaixo.
+
+- PageInfo
+
+Um "Connection Type" deve conter um campo chamado pageInfo. Este campo deve retornar um objeto PageInfo não nulo, como definido na seção "PageInfo" abaixo.
+
+Edge Types
+
+Um type que é retornado em forma de lista por um campo edges de connection type é considerado por esta especificação um Edge Type. Edge types devem ser um "objeto" como definido na seção "Type System" do GraphQL.
+Edge types devem ter campos chamados node e cursor. Eles podem ter campos adicionais relacionados ao edge como o criador do schema bem entender.
+
+- Node
+
+Um "Edge Type" deve conter um campo chamado node. Este campo deve retornar ou Scalar, Enum, Object, Interface, Union, ou um wrapper não nulo em torno de um destes types. Notavelmente, este campo não pode retornar uma lista.
+
+Observação: A nomeação ecoa da interface "Node" e do campo root "node" como descrito em uma seção mais tardia desta especificação. Clientes compatíveis com esta especificação podem performar certas otimizações se este campo retornar um objeto que implementa Node, entretanto, isto não é um requisito obrigatório.
+
+- Cursor
+
+Um "Edge type" deve conter um campo chamado cursor. Este campo deve retornar um type que serializa como uma String; isto pode ser uma string, um não nulo, ou um wrapper não nulo envolvendo uma string, um escalar padrão que serializa como uma string, ou um wrapper não nulo em volta de um escalar padrão que serializa como uma string.
+Qualquer que seja o type que este campo retornar, será referido como o cursor type no resto desta especificação.
+O resultado deste campo deve ser considerado opaco pelo cliente, mas será passado de volta ao servidor como descrito na seção "Arguments" abaixo.
+
+Argumentos
+
+Um campo que retorna um "Connection Type" deve incluir argumentos de paginação para frente, argumentos de paginação para trás, ou ambos. Estes argumentos de paginação permitem o cliente dividir o conjunto de edges antes dele ser retornado.
+
+- Argumentos de Paginação Para frente
+
+Para habilitar paginação para frente, dois argumentos são obrigatórios.
+
+---> first recebe um inteiro não negativo.
+---> after recebe um cursor type como veremos mais adiante.
+
+O servidor deve utilizar esses dois argumentos para modificar os edges retornados pela connection, retornando os edges depois do cursor after, e retornando no máximo o número de edges de first.
+Você normalmente deve passar o cursor do último edge da página anterior para after.
+Basicamente: Retorne os primeiros "first" objetos depois do edge "after".
+
+- Arguumentos de Paginação Para Trás
+
+Para habilitar paginação para trás, dois argumentos são obrigatórios.
+
+---> last recebe um inteiro não negativo.
+---> before recebe um cursor type como veremos mais adiante.
+
+O servidor deve utilizar esses dois argumentos para modificar os edges retornados pela connection, retornando os edges antes do cursor before, e retornando no máximo o número de edges de last.
+Você normalmente deve passar o cursor do primeiro edge da próxima página para before.
+Basicamente: Retorne os últimos "last" objetos antes do edge "before".
+
+- Ordem do Edge
+
+Você pode ordenar os edges de acordo  com sua regra de negócio, e pode determinar a ordenação baseada em argumentos adicionais não cobertos por esta especificação. Mas a ordenação deve ser consistente de página para página, e mais importante, a ordenação dos edges deve ser a mesma ao usar first/after e ao usar last/before, todos os outros argumentos sendo iguais. Ela não deve ser revertida ao usar last/before. Mais formalmente:
+
+---> Quando before: cursor é utilizado, o edge mais próximo do cursor deve vir por último no resultado edges.
+---> Quando after: cursor é utilizado, o edge mais próximo do cursor deve vir em primeiro no resultado edges.
+
+PageInfo
+
+O servidor deve fornecer um type chamado PageInfo.
+
+- Campos
+
+PageInfo deve conter os campos hasPreviousPage e hasNextPage, ambos retornam booleans não nulos. Ele também deve conter os campos startCursor e endCursor, ambos retornam strings opacadas não nulas.
+HasPreviousPage é utilizado para indicar se mais edges existem antes do conjunto definido pelos argumentos dos clientes. Se o cliente está paginando com last/before, então o servidor deve retornar true se edges anteriores ao primeiro edge retornado existirem, caso contrário false. Se o cliente está paginando com first/after, então o cliente pode retornar true se edges anteriores a after existirem, caso contrário pode retornar false.
+hasNextPage é utilizado para indicar se mais edges existem depois do conjunto definido pelos argumentos dos clientes. Se o cliente está paginando com first/after, então o servidor deve retornar true se mais edges existirem depois do último edge retornado, caso contrário false. Se o cliente está paginando com last/before, o cliente deve retornar true se mais edges depois de before existirem, caso contrário pode retornar false.
+Os campos startCursor e endCursor devem ser os cursores correspondentes ao primeiro e último nodes em edges, respectivamente.
+
+Exemplo Completo:
+
+Uma facção tem muitas naves no universo de Star Wars. 
+Vamos pegar os rebeldes, e pedir a sua primeira nave:
+
+    // Query
+    query {
+        rebels {
+            name
+            ships(first: 1) {
+                edges {
+                    node {
+                        name
+                    }
+                }
+            }
+        }
+    }
+
+Retorna:
+
+    // Response
+    {
+        "rebels": {
+            "name": "Alliance to Restore the Republic",
+            "ships": {
+                "edges": [
+                    {
+                        "node": {
+                            "name": "X-Wing"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+
+A consulta acima utilizou o argumeto first em ships para dividir o conjunto de resultados para o primeiro. Mas e se quiséssemos paginar isto? Em cada edge, um cursor será exposto para que possamos paginar. Vamos pedir as primeiras duas naves desta vez, e pegar o cursor também:
+
+    // Query
+    query {
+        rebels {
+            name
+            ships(first: 2) {
+                edges {
+                    cursor
+                    node {
+                        name
+                    }
+                }
+            }
+        }
+    }
+
+Retorna:
+
+    // Response
+    {
+        "rebels": {
+            "name": "Alliance to Restore the Republic",
+            "ships": {
+                "edges": [
+                    {
+                        "cursor": "YXJyYXljb25uZWN0aW9uOjA=",
+                        "node": {
+                            "name": "X-Wing"
+                        }
+                    },
+                    {
+                        "cursor": "YXJyYXljb25uZWN0aW9uOjE=",
+                        "node": {
+                            "name": "Y-Wing"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+
+Perceba que o cursor é uma string base64. O servidor está nos lembrando que isto é uma string opaca. Podemos passar esta string de volta para o servidor como o argumento after para o campo ships, que nos permitirá pedir as próximas três naves depois da última no resultado anterior:
+
+    // Query
+    query {
+        rebels {
+            name
+            ships(first: 3, after: "YXJyYXljb25uZWN0aW9uOjE=") {
+                edges {
+                    cursor
+                    node {
+                        name
+                    }
+                }
+            }
+        }
+    }
+
+Retorna:
+
+    // Response
+    {
+        "rebels": {
+            "name": "Alliance to Restore the Republic",
+            "ships": {
+                "edges": [
+                    {
+                        "cursor": "YXJyYXljb25uZWN0aW9uOjI=",
+                        "node": {
+                            "name": "A-Wing"
+                        }
+                    },
+                    {
+                        "cursor": "YXJyYXljb25uZWN0aW9uOjM=",
+                        "node": {
+                            "name": "Millenium Falcon"
+                        }
+                    },
+                    {
+                        "cursor": "YXJyYXljb25uZWN0aW9uOjQ=",
+                        "node": {
+                            "name": "Home One"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+
+Seguindo em frente e pegando os próximos 4:
+
+    // Query
+    query {
+        rebels {
+            name
+            ships(first: 4, after: "YXJyYXljb25uZWN0aW9uOjQ=") {
+                edges {
+                    cursor
+                    node {
+                        name
+                    }
+                }
+            }
+        }
+    }
+
+Retorna:
+
+    // Response
+    {
+        "rebels": {
+            "name": "Alliance to Restore the Republic",
+            "ships": {
+                "edges": []
+            }
+        }
+    }
+
+Então não há mais naves; provavelmente haviam apenas 5 no sistema para os rebeldes. Seria ótimo saber se alcançamos o fim da connection, sem ter que fazer outra requisição para verificar isso. O modelo connection expõe esta capacidade com PageInfo. Então vamos emitir novamente as duas consultas que nos trouxeram as naves, mas desta vez pedir por hasNextPage:
+
+    // Query
+    query {
+        rebels {
+            name
+            originalShips: ships(first: 2) {
+                edges {
+                    node {
+                        name
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                }
+            }
+            moreShips: ships(first: 3, after: "YXJyYXljb25uZWN0aW9uOjE=") {
+                edges {
+                    node {
+                        name
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                }
+            }
+        }
+    }
+
+Retorna:
+
+    // Response
+    {
+        "rebels": {
+            "name": "Alliance to Restore the Republic",
+            "originalShips": {
+                "edges": [
+                    {
+                        "node": {
+                            "name": "X-Wing"
+                        }
+                    },
+                    {
+                        "node": {
+                            "name": "Y-Wing"
+                        }
+                    }
+                ],
+                "pageInfo": {
+                    "hasNextPage": true
+                }
+            },
+            "moreShips": {
+                "edges": [
+                    {
+                        "node": {
+                            "name": "A-Wing"
+                        }
+                    },
+                    {
+                        "node": {
+                            "name": "Millenium Falcon"
+                        }
+                    },
+                    {
+                        "node": {
+                            "name": "Home One"
+                        }
+                    }
+                ],
+                "pageInfo": {
+                    "hasNextPage" false
+                }
+            }
+        }
+    }
+
+Então na primeira consulta pelas naves, o GraphQL nos disse que havia uma próxima página, mas na consulta seguinte, ele nos disse que tínhamos alcançado o fim da connection.
+
+Implementando Connections na Prática
+
+Seguindo o exemplo anterior, vamos imaginar agora que temos uma query para buscarmos diretamente as naves com um campo query root ships.
+Primeiro precisamos transformar este campo em um campo connection do Relay. Renomearemos ele para shipsConnection para deixar claro para os clientes que queiram utilizá-lo.
+Assim como qualquer outro type personalizado, precisamos definir um type para este novo campo shipsConnection. Podemos utilizar um helper do Relay neste caso para criar o novo type.
+
+	// src/graphql/connection.ts
+	import { connectionDefinitions } from 'graphql-relay';
+
+	import ShipType from './types/ShipType.ts';
+
+	export const { connectionType: ShipConnectionType } = connectionDefinitions({
+	  name: 'Ship',
+	  nodeType: GraphQLNonNull(ShipType)
+	});
+
+ShipConnectionType será o type que podemos utilizar para definir o novo campo usersConnection.
+connectionDefinitions() é uma função helper disponível no pacote graphql-relay.
+Esse pacote possui os seguintes helpers:
+
+- connectionDefinitions
+
+connectionDefinitions é uma função que recebe um objeto de configuração descrevendo um type personalizado em um schema GraphQL e retorna outro objeto com helpers úteis relacionados ao modelo de connection do Relay em torno do type personalizado.
+
+- connectionArgs
+
+connectionArgs é um objeto que define todos os argumentos que podem ser utilizados com o modelo de connection. Esses argumentos são: first, last, after, e before. Veremos como utilizá-los mais a frente.
+
+- connectionFromArray
+
+connectionFromArray é uma função helper que recebe um array e os argumentos de connectionArgs, faz a paginação e a filtragem, e retorna um objeto no formato esperado pela função resolve de um type connection.
+
+- connectionFromPromisedArray
+
+connectionFromPromisedArray é parecido com connectionFromArray, mas recebe uma promise que é resolvida para um array, e retorna uma promise que é resolvida para o formato esperado pelo type connection.
+
+O objeto de connectionDefinitions que definimos para ShipType tem uma propriedade connectionType; esta é a propriedade que podemos utilizar para definir nosso campo shipsConnection. Desestruturamos essa propriedade como ShipConnectionType.
+
+Agora estamos prontos para definir o novo campo shipsConnection em nossa query root (substituindo o antigo campo ships).
+
+	// src/graphql/types/QueryType.ts
+	import { GraphQLObjectType, GraphQLNonNull } from 'graphql';
+	import { connectionArgs, connectionFromPromisedArray } from 'graphql-relay';
+
+	import { ShipConnectionType } from './types/ShipType';
+
+	const QueryType = new GraphQLObjectType({
+	  name: 'RootQuery',
+	  fields: () => ({
+	    ships: {
+	      type: GraphQLNonNull(ShipConnectionType),
+	      description: 'A list of the ships in the database',
+	      args: connectionArgs,
+	      resolve: (_, args, { db }) => connectionFromPromisedArray(
+	        db.collection('ships').find().toArray(),
+		args
+	      )
+	    }
+	  })
+	});
+
+Algumas coisas a notar aqui:
+
+- O type do campo ships é o objeto que geramos a partie de connectionDefinitions() do Relay para ShipType. Esta é a maneira do Relay de expressar que ships é uma connection que representa nodes do type Ship.
+- O objeto args de ships é definido como connectionArgs, que importamos do Relay também. Isto significa que podemos utilizar este connectionArgs em qualquer campo definido como connection type.
+- Em vez de retornar a promise do MongoDB na função resolve(), retornamos a invocação de connectionFromPromisedArray(), e passamos como segundo argumento o objeto args.
+
+Isto é tudo que precisamos mudar no schema; nossa lista de naves agora é uma connection do Relay com features de paginação que podemos utilizar fora da caixa. Por exemplo, para buscar os dois primeiros objetos de nave, podemos utilizar esta query:
+
+	query {
+	  ships(first: 2) {
+	    edges {
+	      node {
+		id
+		name
+	      }
+	    }
+	  }
+	}
+
+Veja agora como nosso servidor GraphQL responderia a esta query:
+
+	{
+	  "data": {
+	    "ships": {
+	      "edges" [
+		{
+		  "node": {
+		    "id": "574d12b94ec08043094840a2",
+		    "name": "X-Wing"
+		  },
+		  "node": {
+		    "id": "574d12b94ec08043094840a3",
+		    "name": "Y-Wing"
+		  }
+		}	        
+	      ]
+	    }
+	  }
+	}
+
+Perceba a nova hierarquia para os campos da query. O Relay adicionou um campo edges e um campo node. Esta nova hierarquia nos permite pedir meta informações relacionadas ao grupo de paginação. Por exemplo, o Relay automaticamente adiciona um cursor único para cada node e nos permite descobrir se a página atual é a última ou não; aqui está a query para ler ambos estes novos pedaços meta de informação sobre a página atual:
+
+	query {
+	  ships(first: 1) {
+	    pageInfo {
+	      hasNextPage
+	    }
+	    edges {
+	      cursor
+	      node {
+	        id
+		name
+	      }
+	    }
+	  }
+	}
+
+O servidor responde isso da seguinte maneira:
+
+	{
+	  "data": {
+	    "ships": {
+	      "pageInfo": {
+		"hasNextPage": true
+	      }
+	      "edges": [
+		{
+		  "cursor": "YXJyYXljb25uZWN0aW9uOjA=",
+		  "node": {
+		    "id": "574d12b94ec08043094840a2",
+		    "name": "X-Wing"
+		  }
+		}
+	      ]
+	    }
+	  }
+	}

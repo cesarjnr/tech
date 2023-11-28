@@ -1,0 +1,51 @@
+update-alternatives
+
+update-alternatives
+
+Podemos ter em nossa máquina diversos programas que atendem a um mesmo propósito, ou até mesmo, mais de uma versão do mesmo programa instalada. O Linux não tem como saber qual dos programas (ou versão) deve ser utilizado como o padrão. Então, ele se baseia em uma lista, localizada em /etc/alternatives, que contém os caminhos desses programas e suas versões.
+Se por exemplo, tivermos mais de um programa que seja um terminal, podemos então configurar um grupo de programas que poderão ser utilizados como terminal. Ou se tivermos mais de uma versão do Python3 instalada, podemos configurar um grupo de versões que poderão ser utilizadas pelo Python.
+Para gerenciar essa tarefa, utilizamos um comando chamado update-alternatives.
+
+- Listando todos os grupos de alternativas
+
+	update-alternatives --get-selections
+
+A flag --get-selections lista todos os grupos e suas respectivass alternativas.
+
+- Configurando alternativas
+
+	update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /opt/Hyper/hyper 50
+
+A flag --install nos permite configurar uma alternativa em determinado grupo.
+Ela recebe 4 parâmetros:
+
+1º: O caminho do executável da aplicação a qual queremos criar, ou configurar, um grupo de alternativas. Em nosso exemplo, queremos criar um grupo de alternativas para nossa aplicação de terminal, que está localizada em /user/bin/x-terminal-emulator. Se, por exemplo, quiséssemos criar, ou configurar, um grupo de alternativas para nossa aplicação Python3, poderíamos inserir /usr/bin/python3.
+
+2º: O nome do grupo de alternativas. Geralmente utilizamos o mesmo nome da aplicação a qual estamos configurando o grupo.
+
+3º: O caminho do programa que queremos adicionar como alternativa. Em nosso exemplo, /opt/Hyper/hyper. Se, por exemplo, quiséssemos adicionar uma outra versão do Python3 como alternativa, poderíamos inserir /usr/bin/python3.2.
+
+Esse comando basicamente criará um arquivo em /etc/alternatives/<group-name> onde <group-name> é o nome do grupo especificado, linkando-o ao executável informado no 1º parâmetro.
+
+Obs.: A versão 3.6 do Python3 já vem instalada por padrão pois é utilizada pelo sistema operacional.
+
+4ª: Nossos grupos possuem dois modos de funcionamento: auto e manual. 
+No modo auto, o sistema operacional decidirá qual das alternativas será executada de forma padrão baseado no prioridade daquela alternativa no grupo. E é justamente essa prioridade que passamos ao 4º parâmetro. É um valor inteiro que representa a prioridade daquela alternativa sobre as outras dentro daquele determinado grupo. A alternativa de maior prioridade sempre será utilizada como padrão. Se tivermos, por exemplo, 3 alternativas para um mesmo grupo com as prioridades 1, 2 e 3, a alternativa de prioridade 3 sempre será utilizada como padrão. Caso ela esteja indisponível, então a alternativa de prioridade 2 será utilizada.
+
+- Definindo a alterantiva padrão
+
+O modo manual é quando configuramos manualmente qual será a alternativa padrão a ser utilizada pelo grupo. Alcançamos isto utilizando a flag --config:
+
+	update-alternatives --config x-terminal-emulator
+
+Essa flag recebe como argumento o grupo de alternativas o qual queremos definir a alternativa padrão.
+Após executado, o comando listará a lista de alternativas, onde precisamos apenas inserir o número da alternativa que queremos e teclar ENTER.
+
+- Listando as alternativas de um determinado grupo
+
+	update-alternatives --list x-terminal-emulator
+
+A flag --list nos permite lista as alternativas de programas que configuramos para um determinadl grupo.
+Ela recebe 1 parâmetro:
+
+1º: O nome do grupo o qual queremos listar as alternativas. No exemplo acima, estamos listando as alternativas configuradas para o grupo x-terminal-emulator, que é nosso terminal.

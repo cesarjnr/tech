@@ -1,0 +1,52 @@
+Introdução
+
+O Elasticsearch é uma ferramenta open source para realização de buscas e análise de dados construída para trabalhar com grandes volumes de dados, permitindo indexar documentos e realizar buscas nesses documentos em (quase) tempo real.
+O Elasticsearch realiza buscas por índice invertido e esse princípio trabalha da seguinte forma:
+
+- No momento que o documento é indexado, o Elasticsearch separa todos os seus termos em tokens.
+- Em seguida, ele faz uma medição para definir quais tokens são relevantes, eliminando assim artigos, preposições, etc.
+- O próximo passo é organizar os tokens em um índice e informar em cada token quais documentos contém esse token.
+- Quando uma busca for feita, ela agirá sobre esse índice invertido ao invés de vasculhar cada documento individualmente, procurando pelos termos buscados.
+
+O Elasticsearch suporta um grande volume de dados sem perder performance. Ele pode ser implementado em qualquer sistema independentemente da plataforma, por fornecer uma API REST. Além disso, o Elasticsearch é altamente escalável, podendo ir de um servidor a muitos servidores simultâneos.
+O uso do Elasticsearch é necessário sempre que for interessante encontrar informações em grandes volumes de dados buscando por texto. Ele também fornece uma API para realizar análises sobre os dados recuperados como resultado da busca.
+
+Arquitetura
+
+Veja a seguir um exemplo de uma requisição de busca para uma arquitetura simples que utiliza o Elasticsearch:
+
+introduction-01 image here
+
+No exemplo acima, temos o client fazendo uma requisição GET para o nosso servidor. Nosso servidor utiliza os parâmetros enviados para fazer a busca no Elasticsearch, que retorna os IDs dos documentos encontrados. Por fim, o servidor utiliza esses IDs para encontrar os respectivos registros no banco de dados. Ou seja, a query pesada (por texto) foi feita no Elasticsearch que possui algoritmos para otimizar esse tipo de query e a query final feita no banco utilizando os IDs é bem leve visto que IDs, por padrão, são indexados nos bancos de dados.
+O fluxo completo do processamento dos dados em uma aplicação que utiliza o Elasticsearch é o seguinte:
+
+introduction-02 image here
+
+Como podemos ver, todas as operações passam pelo Elasticsearch e pelo banco de dados da aplicação de forma a evitar inconsistência nos dados.
+A maneira mais simples que podemos utilizar para integrar o Elasticsearch em nossa API é utilizando um middleware. Veja o exemplo abaixo:
+
+introduction-03 image here
+
+Na imagem acima temos dois fluxos para as operações de criação, atualização e exclusão de recursos: o 1º é o fluxo padrão de uma API sem o uso do Elasticsearch e o 2º é o fluxo com a utilização do Elasticsearch.
+Como podemos ver, está sendo utilizado como middleware um ORM. O fluxo é basicamente o seguinte: o client faz a requisição para a API que utiliza um ORM para gerar a query. A query então é executada no banco. Antes da resposta ser retornada pela API, temos a etapa de gerar/atualizar o index do Elasticsearch.
+
+Instalação
+
+1. Baixa o Elasticsearch para seu sistema operacional:
+
+	curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.12.0-linux-x86_64.tar.gz // Linux
+
+2. Descompacte o arquivo:
+
+	tar -xvf elasticsearch-7.12.0-linux-x86_64.tar.gz
+	
+3. Inicialize o Elasticsearch do diretório bin:
+
+	cd elasticsearch-7.12.0/bin
+	./elasticsearch
+	
+Agora temos um único node rodando o Elasticsearch em um cluster.
+
+Elasticsearch API
+
+O Elasticsearch provê uma interface por meio de uma API REST para realizar suas consultas, indexar documentos, etc. que, por padrão, é disponibilizada no endereço localhost:9200. Para verificar se o Elasticsearch está rodando adequadamente abra o navegador e entre em http://localhost:9200.

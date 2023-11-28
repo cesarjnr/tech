@@ -1,0 +1,80 @@
+AWS Lambda
+
+As lambda functions são simples funções que podemos criar e fazê-las rodar no servidor da AWS (ou outra cloud), o que configura a arquitetura que chamamos de Serverless.
+Cada provedor de cloud possui sua própria interface e maneira de criar e configurar as lambdas. Pensando nisso, foi criada uma biblioteca chamada serverless que nos permite criar as lambdas diretamente em um projeto no nosso editor de texto de maneira simples e agnóstica a provedor de cloud, onde nos preocupamos apenas com desenvolvimento das nossas regras de negócio. Temos uma configuração padrão que nos permitirá fazer o deploy para qualquer provedor de cloud mudando poucas coisas.
+
+Criando uma API Serverless
+
+Vamos ver o passo a passo para criarmos uma simples API Serverless:
+
+1. Dentro do diretório raiz do projeto, instale a lib serverless:
+
+	yarn add serverless
+	
+2. Para gerar os arquivos de configuração base de forma automática, rode o seguinte comando:
+
+	yarn serverless create --template aws-nodejs
+	
+O comando acima criará os arquivos de configuração base onde poderemos fazer o deploy de uma aplicação Node.js na AWS. Consulte a documentação para outros templates.
+
+3. O arquivo mais importante para nós será o serverless.yml. É nele que estão contidas as configurações que guiarão o funcionamento das lambdas. Vejamos algumas delas:
+
+---> service - é nome do serviço.
+
+---> provider - configurações do provedor de cloud.
+     ---> name - nome do provider
+     ---> runtime - ambiente de execução a ser utilizado.
+     ---> region - região na qual se encontra o servidor onde será realizado o deploy do serviço. Por padrão, ele utiliza a região US EAST (N. Virginia) us-east-1.
+  
+---> functions - configurações das lambdas.
+     ---> ${nome-funcao} - nome da função que será chamada.
+          ---> handler - caminho do arquivo que contém a implementação da função + nome da função dentro desse arquivo.
+          
+4. Os handlers são as funções que contêm a implementação das nossas lambdas. Cada handler possui 2 parâmetros: event e context.
+O parâmetro event é um objeto que contém todas as informações a respeito do evento gerado que vai depender muito de evento para evento. Podemos ter um evento que é resultado de uma requisição HTTP e que, nesse caso, o parâmetro event conterá todas as informações da requisição em questão como os headers, o body, etc. Podemos ter também eventos gerados por outros serviços da AWS como o SQS, SNS, etc.
+
+Realizando o Deploy da API Serverless
+
+Para fazer o deploy, precisamos configurar nossas credenciais da AWS no arquivo serverless.yml. Fazemos isso rodando o seguinte comando:
+
+	yarn serverless config credentials --overwrite --provider aws --key your_access_key_id --secret your_secret_access_key
+	
+Os parâmetros utilizados foram os seguintes:
+
+--o: utilizado para dar overwrite nas credenciais, caso você já tenha configurado credenciais da AWS anteriormente neste projeto. Caso seja a primeira vez, não é necessário.
+--p: nome do provedor da cloud.
+--key: id da chave da acesso.
+--secret: chave secreta de acesso.
+
+É possível também realizar o deploy direto da interface da AWS.
+Por fim, para realizarmos o deploy, rodamos o seguinte comando:
+
+	yarn serverless deploy -v
+	
+O parâmetro -v é passado para informar que queremos o deploy "verboso", queremos ver no console todos os passos que estão acontecendo no processo de deploy.
+
+Disparando as Lambdas na API Serverless
+
+Agora, vamos disparar nossa função. Existem 3 formas de dispararmos uma lambda:
+
+---> Através da linha de comando, utilizando a CLI da lib Severless que vinhemos utilizando.
+---> Através de uma requisição HTTP.
+---> Através de eventos disparados por outras aplicações. Podemos configurar nosso serviço para ouvir esses eventos e disparar nossa lambda.
+
+Através da linha de comando, podemos utilizar o seguinte comando:
+
+	yarn serverless invoke -f lambda-name -l
+	
+Os parâmetros utilizados foram os seguintes:
+
+-f: utilizado para informarmos o nome da lambda.
+-l: para exibir um log do fluxo de acontecimentos.
+
+Removendo a API Serverless da Cloud
+
+Para removermos completamente nossa API da cloud, podemos rodar o seguinte comando:
+
+	yarn serverless remove
+	
+Isso fará com que todo o processo de deploy seja desfeito.
+

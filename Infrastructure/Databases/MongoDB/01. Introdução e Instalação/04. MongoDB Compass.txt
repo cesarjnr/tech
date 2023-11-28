@@ -1,0 +1,27 @@
+MongoDB Compass
+
+O MongoDB Compass é uma interface gráfica que nos permite gerenciar e manusear nossos bancos de dados MongoDB e seus documentos.
+
+Instalando o Compass
+
+1. Baixe os pacotes do Compass. No site é possível baixar o arquivo, caso não consiga, utilize o seguinte comando:
+
+	wget https://downloads.mongodb.com/compass/mongodb-compass_1.18.0_amd64.deb
+
+2. Instale os pacotes do Compass.
+
+	sudo dpkg -i mongodb-compass_1.18.0_amd64.deb
+
+Criando um Banco de Dados
+
+No Compass, podemos criar um novo banco de dados clicando no botão CREATE DATABASE.
+Uma janela será aberta pedindo para que seja informado o nome do banco de dados e o nome da coleção, que tem o conceito parecido com o de uma tabela, e é onde os nossos documentos serão armazenados.
+
+Criando uma Coleção
+
+Podemos criar uma coleção clicando no nome do banco de dados desejado e depois no botão CREATE COLLECTION.
+
+Inserindo um Documento
+
+Para inserir um novo documento, que funciona de maneira similar a um registro nos bancos de dados relacionais, dentro do banco de dados, clicamos na coleção desejada e depois no botão INSERT DOCUMENT.
+Todos os documentos automaticamente terão uma chave chamada _id com um valor preenchido, que será o identificador único daquele documento. Para criarmos mais chaves, basta inserirmos novos pares de chave-valor abaixo de _id. Após inseridos todas as chaves e valores, clique em INSERT.

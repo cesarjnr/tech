@@ -1,0 +1,3 @@
+/media/cesar/a477f989-82c8-430d-8ce8-b3313dc29c791/Tech/DevOps/Linux/09. Cmake/example/build/CMakeFiles/rebuild_cache.dir
+/media/cesar/a477f989-82c8-430d-8ce8-b3313dc29c791/Tech/DevOps/Linux/09. Cmake/example/build/CMakeFiles/edit_cache.dir
+/media/cesar/a477f989-82c8-430d-8ce8-b3313dc29c791/Tech/DevOps/Linux/09. Cmake/example/build/CMakeFiles/main.dir

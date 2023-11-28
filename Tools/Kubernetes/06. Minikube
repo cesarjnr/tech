@@ -1,0 +1,51 @@
+Minikube
+
+Definição
+
+Minikube é uma ferramenta que nos permite testar localmente o Kubernetes. Ela basicamente nos permite rodar os processos referentes ao node master e os processos referentes ao node worker em um mesmo node. Ou seja, ela nos permite rodar um cluster na nossa própria máquina.
+A maneira que o Minikube nos permite rodar isso na nossa própria máquina é através do Virtual Box. Ele criará uma máquina virtual em nossa máquina e a transformará em um Node.
+
+minikube image here
+
+Esse node terá um container runtime instalado.
+
+Instalação
+
+- Linux
+
+Existem 2 maneiras de instalar o Minikube no Linux:
+
+  curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+  sudo install minikube-linux-amd64 /usr/local/bin/minikube
+  
+Ou:
+
+  curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+  sudo dpkg -i minikube_latest_amd64.deb
+  
+Observações:
+
+-----> É necessário que a virtualização esteja habilitada e que haja um driver de virtualização instalado na máquina. Para este exemplo, utilizaremos o próprio Docker como driver.
+-----> O kubectl é uma dependência do Minikube e, portanto, será instalado junto.
+
+Comandos
+
+- start: cria e inicializa um cluster local.
+
+	minikube start --driver=docker
+	
+O parâmetro --driver deve receber o driver do virtualizador que está sendo utilizado em sua máquina.
+
+- stop: pára um cluster que está rodando.
+
+	minikube stop
+	
+- status: retorna o status do cluster local.
+
+	minikube status
+	
+Obs.: É possível utilizar o kubectl dentro do minikube sem precisar instalá-lo (kubectl) em sua máquina. Fazemo isso mesclando os comandos da seguinte maneira:
+
+	minikube kubectl -- command-name
+	
+Utilizamos os comandos minikube e kubectl seguidos por dois traços e o nome do comando do kubectl desejado.

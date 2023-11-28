@@ -1,0 +1,18 @@
+Para rodar uma instância do banco você pode ou baixar um executável Java ou rodar um container do Docker com a instância do banco.
+
+- Utilizando o Docker
+
+1. Copie o seguinte código para um arquivo docker-compose.yml.
+
+	version: '3.7'
+	services:
+	  dynamodb-local:
+	  image: amazon/dynamodb-local:latest
+	  container_name: dynamodb-local
+	  ports:
+	    - "8000:8000"
+
+3. Rode o seguinte comando:
+
+	docker-compose up
+       

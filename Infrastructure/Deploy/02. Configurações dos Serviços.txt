@@ -1,0 +1,41 @@
+Configurações dos Serviços
+
+Nesta etapa, vamos configurar nossos serviços no Docker.
+
+Configuração do Banco de Dados (PostgreSQL)
+
+	docker run --name database -e POSTGRES_PASSWORD=2e4a9b4487dd816780abcf9ea829d165 -p 5432:5432 --restart always -d postgres
+
+--name database - estamos definindo o nome do container, que será 'database'.
+-e POSTGRES_PASSWORD=2e4a9b4487dd816780abcf9ea829d165 - estamos definindo uma variável de ambiente, que será POSTGRES_PASSWORD. Prefira uma senha forte e difícil, pois essa será a senha do usuário root para o banco, e como não utilizaremos o usuário root nas aplicações em produção (medida de segurança), podemos (e devemos) definir uma senha forte.
+-p 5423:5432 - estamos definindo o redirecionamento de portas do Docker.
+-- restart always - sempre que houver algum problema com a instância, ela será automaticamente reiniciada.
+-d - estamos definindo que o container rodará em background e não "prenderá" nosso terminal.
+postgres - a imagem a ser utilizada.
+
+Obs.: No redirecionamento de portas, sempre prefira colocar uma porta diferente e longe da porta original, como uma medida de segurança. Isso dificulta ataques hackers à aplicação. E, caso a aplicação também for estar rodando no docker, evite o redirecionamento de portas e prefira fazer a configuração de rede do Docker para que os containers possam conversar entre si.
+
+Agora, vamos criar o usuário que será utilizado pelas nossas aplicações para se comunicar com o banco.
+Rode o seguinte comando:
+
+	docker exec -it database /bin/bash
+
+exec - estamos informando ao docker que vamos rodar um comando bash dentro de um container.
+-it - estamos informando ao docker que não vamos simplesmente rodar um único comando e sim acessar um terminal.
+database - nome do container em que o comando será executado.
+/bin/bash - comando a ser executado.
+
+Você verá que um terminal será aberto com o usuário root. Altere para o usuário postgres e se conecte ao Postgres com o comando psql:
+
+	su postgres
+	psql
+
+Agora, vamos criar o banco de dados da aplicação, o usuário a ser utilizado para se conectar a ele e dar as permissões desse banco para esse novo usuário.
+
+	CREATE DATABASE nodedeploy;
+	CREATE USER myapp WITH ENCRYPTED PASSWORD '88181fb72ce6bcaea828f57b3db3df19';
+	GRANT ALL PRIVILEGES ON DATABAE nodedeploy TO myapp;
+
+Configuração da Aplicação
+
+

@@ -1,0 +1,23 @@
+Encriptação de Dados
+
+Quando trabalhamos com armazenamento de senhas em bancos de dados, precisamos utilizar métodos que nos permitam encriptar essas senhas.
+No postgres existe um módulo chamado pgcrypto que nos fornece funções criptográficas. Para instalá-la, utilize o seguinte comando:
+
+	// Linux
+	sudo apt-get install postgresql-contrib libpq-dev
+
+Após realizada a instalação, acesse o banco de dados que você deseja habilitar a extensão crypto e insira o seguinte comando:
+
+	CREATE EXTENSION pgcrypto;
+
+Agora, as funções criptográficas estão disponíveis para que possamos utilizar em nossas queries. Por exemplo, para editar um dado já existente, poderíamos utilizar a função crypt em conjunto com a função gen_salt:
+
+	UPDATE customers SET password = crypt('new password', gen_salt('bf'));
+
+No exemplo acima, passamos para a função gen_salt uma string contendo o método de encriptação que queremos utilizar. Neste caso, bf é referente a Blowfish. Evite o uso de md5, sha256, etc. pois são métodos ultrapassados e não seguros atualmente.
+
+Para saber se determinado valor coincide com determinado dado criptografado, utilizamos também a função crypt:
+
+	SELECT password = crypt('value to test', password) FROM users;
+
+No exemplo acima, estamos dando um select no campo password da tabela users. Atribuímos ao password o resultado da função crypt. Nesse caso, o 1º argumento é o valor a ser testado e o segundo o valor do campo no banco de dados. Isso nos retornará true para o caso dos valores coincidirem ou false para caso não coincidirem.

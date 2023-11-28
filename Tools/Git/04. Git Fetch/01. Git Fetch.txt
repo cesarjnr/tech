@@ -1,0 +1,13 @@
+Git Fetch
+
+Sincronizando Alterações no Repositório Original (upstream) com as Alterações no Repositório Local (fork)
+
+1. Busque as branchs e seus respectivos commits no repositório upstream. Commits na master serão armazenados em uma branch local chamada upstream/master.
+
+	git fetch upstream
+	
+2. Faça um merge das alterações na branch upstream/master para sua branch master local. Isso sincroniza a branch master do seu fork com o repositório upstream, sem perder suas alterações locais.
+
+	git merge upstream/master
+
+	

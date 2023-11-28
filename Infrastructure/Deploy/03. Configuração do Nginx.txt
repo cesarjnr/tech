@@ -1,0 +1,98 @@
+Configuração do Nginx
+
+O Nginx é um software que funciona como proxy reverso. O que ele faz, basicamente, é pegar uma URL e redirecionar para alguma aplicação dentro do nosso servidor.
+Então, por exemplo, podemos pegar a URL:
+
+	www.utransfer.grupounicad.com.br
+
+E redirecioná-la para o endereço de IP do servidor que está hospedando nossa aplicação:
+
+	172.31.14.141:3333
+
+Instalação
+
+Para instalá-lo:
+
+	sudo apt install nginx
+
+Para verificar se o Nginx foi instalado corretamente, basta acessar o endereço do seu servidor, sem a porta:
+
+	172.31.14.141
+
+A tela a ser exibida deve ser uma tela de boas vindas do Nginx.
+
+Configurando uma Aplicação
+
+Dentro do Nginx temos dois diretórios importantes:
+
+	/etc/nginx/sites-available
+
+Este diretório é onde ficam os arquivos de configuração de cada aplicação dentro do Nginx.
+
+	/etc/nginx/sites-enabled
+	
+Este diretório é onde ficam arquivos simbólicos. O que quer dizer isso? São arquivos que basicamente apontam para outros arquivos. Então, se você rodar o seguinte comando:
+
+	ls -la
+
+Você obterá a seguinte saída:
+
+	... default -> /etc/nginx/sites-available/default
+
+Então, caso você queira manter uma aplicação configurada mas não habilitada, basta remover o arquivo do diretório sites-enabled.
+
+Por padrão, o Nginx cria uma aplicação padrão que é justamente a aplicação que nos retorna a página de boas vindas. Ele cria tanto o arquivo de configuração quanto o arquivo simbólico.
+
+Para criar uma nova configuração basta criar um arquivo com o nome que você desejar para sua aplicação, dentro do diretório sites-available:
+
+	touch 'utransfer'
+
+Vamos ver um exemplo de configuração básica para uma aplicação Nginx:
+
+	server {
+	  server_name utransfer.grupounicad.com.br
+
+	  location / {
+	    proxy_pass http://172.31.14.141:3333;
+	    proxy_http_version 1.1;
+	    proxy_set_header Upgrade $http_upgrade;
+	    proxy_set_header Connection 'upgrade';
+	    proxy_set_header Host $host;
+	    proxy_set_header X-Real-IP $remote_addr;
+	    proxy_set_header X-Forwarded-Proto $scheme;
+	    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	    proxy_cache_bypass $http_upgrade;
+	  }
+	}
+
+Vamos entender algumas propriedades importantes:
+
+- server_name
+
+Subdomínio e domínio da aplicação.
+
+- location
+
+Subdomínio da aplicação, caso você desejasse. Se você quisesse, por exemplo, que sua aplicação fosse acessada na URL myapplication.com.br/api, você colocaria:
+
+	location /api { ... }
+
+- proxy_pass: caminho da aplicação com a respectiva porta. Pode ser tanto o IP do servidor quanto o domínio criado.
+
+As demais chaves são padrão e não serão alteradas.
+
+Agora precisamos habilitar essa configuração. No diretório sites-enabled precisamos criar um link simbólico para essa configuração. Fazemos isso com o seguinte comando:
+
+	ln -s /etc/nginx/sites-available/utransfer /etc/nginx/sites-enabled/
+
+Para verificar se as configurações foram realizadas com sucesso, rode o seguinte comando:
+
+	nginx -t
+
+Caso haja algum problema, o erro será exibido no terminal.
+
+Por fim, reinicialize o serviço do nginx:
+
+	service nginx restart
+
+A última etapa é configurar o serviço de hospedagem para reconhecer o subdomínio da nova aplicação que configuramos no Nginx, que vai variar de serviço para serviço.

@@ -1,0 +1,46 @@
+Chaves SSH
+
+As chaves SSH são chaves encriptadas que podemos utilizar para nos conectarmos a servidores na WEB. Em vez de digitarmos um nome de usuário e uma senha para nos conectarmos a esses servidores, podemos utilizar chaves SSH para realizar essa autenticação.
+Esse modelo de autenticação é mais seguro, pois com um usuário e uma senha, qualquer pessoa que possua essas credenciais pode se conectar e realizar ações em um servidor utilizando determinada conta. Com as chaves SSH, estamos garantindo que determinada conta só poderá acessar e realizar ações no servidor a partir de uma máquina específica, já que a chave SSH é referente a uma máquina.
+Primeiro de tudo, precisamos gerar uma chave pública da nossa máquina. É essa chave que utilizaremos para nos conectarmos aos servidores.
+Para verificar se você já possui uma chave pública para sua máquina, execute os seguintes comandos:
+
+	cd ~
+	cd .ssh
+	ls
+
+Se o comando de listagem listar o arquivo id_rsa.pub é porque você já possui uma chave pública da sua máquina.
+Caso o arquivo id_rsa.pub não exista, é porque precisamos gerar as chaves para a máquina.
+
+Configurando as Chaves
+
+1. Gerando as chaves
+
+No terminal, rode o seguinte comando:
+
+	ssh-keygen
+
+Responda as perguntas que forem surgindo no terminal ou simplesmente dê ENTER para confirmar as configurações padrões.
+Após isso, liste o conteúdo do diretório para ver se os arquivos id_rsa e id_rsa.pub foram gerados.
+
+2. Adicionando a chave privada ao ssh-agent
+
+Se você não quiser digitar sua senha toda vez que utilizar a chave, você precisará adicioná-la ao ssh-agent.
+Para iniciar o agent, rode o seguinte comando:
+
+	eval `ssh-agent`
+	Agent pid xxxxx
+	
+Depois, rode o seguinte comando:
+
+	ssh-add ~/.ssh/<private_key_file>
+	
+Substitua o local demarcado pelo arquivoe da sua chave privada.
+
+3. Adicionando a chave pública ao repositório remoto
+
+Copie o conteúdo do arquivo id_rsa.pub (removendo tudo após o sinal de igual):
+
+	cat ~/.ssh/id_rsa.pub
+
+Localize as configurações de chave SSH do repositório remoto que está sendo utilizado e cole o conteúdo copiado.

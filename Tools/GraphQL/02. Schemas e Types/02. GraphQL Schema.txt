@@ -1,0 +1,241 @@
+Interfaces e Unions
+
+Interfaces
+
+Interfaces e unions são types abstratos que podem ser utilizados para agrupar outros types. Podemos utilizar uma interface quando houver campos em comum declarados nos types de um grupo, e podemos utilizar uma union quando não houver campos em comum declarados nos types de um grupo.
+Um interface type no GraphQL define os campos que uma implementação conterá, enquanto um union type define uma lista de implementações diferentes. Quando definimos um GraphQLObjectType, podemos opcionalmente listar as interfaces que ele implementa utilizando sua propriedade interfaces.
+Digamos que nosso schema define um EmployeeType para representar os funcionários da empresa, e um VendorType para representar os fornecedores da empresa.
+
+    // src/graphql/types/EmployeeType
+    export default new GraphQLObjectType({
+        name: 'Employee',
+        fields: {
+            name: {
+                type: GraphQLString
+            },
+            departmentName: {
+                type: GraphQLString
+            }
+        }
+    });
+
+    // src/graphql/types/VendorType
+    export default new GraphQLObjectType({
+        name: 'Vendor',
+        fields: {
+            name: {
+                type: GraphQLString
+            },
+            companyName: {
+                type: GraphQLString
+            }
+        }
+    });
+
+Perceba como EmployeeType e VendorType definem o campo name. É aqui que uma interface GraphQL pode ser útil. Vamos nomear esta interface PersonType. Se PersonType define o campo name, podemos dizer que ambos, EmployeeType e VendorType, implementam esta interface PersonType. Veja abaixo como podemos definir a interface PersonType:
+
+    // src/graphql/interfaces
+    export default new GraphQLInterfaceType({
+        name: 'Person',
+        fields: {
+            name: {
+                type: GraphQLString
+            }
+        }
+    });
+
+Com uma interface PersonType definida, podemos utilizar a propriedade interfaces em um objeto de configuração de GraphQLObjectType para fornecer uma lista de interfaces que um objeto implementa:
+
+    // src/graphql/types/EmployeeType
+    export default new GraphQLObjectType({
+        name: 'Employee',
+        fields: {
+            name: {
+                type: GraphQLString
+            },
+            departmentName: {
+                type: GraphQLString
+            }
+        },
+        interfaces: [PersonType]
+    });
+
+    // src/graphql/types/VendorType
+    export default new GraphQLObjectType({
+        name: 'Vendor',
+        fields: {
+            name: {
+                type: GraphQLString
+            },
+            companyName: {
+                type: GraphQLString
+            }
+        },
+        interfaces: [PersonType]
+    })
+
+O fato de um objeto implementar uma interface é nossa garantia que o objeto suportará todos os campos que definimos nessa interface. Quando requisitamos esse schema GraphQL sobre funcionários ou fornecedores, sabemos que podemos sempre pedir seus nomes.
+Vamos adicionar um novo type que utilizar PersonType diretamente:
+
+    // src/grpahql/types/ContactType
+    export default new GraphQLObjectType({
+        name: 'Contact',
+        fields: {
+            person: PersonType,
+            phoneNumber: {
+                type: GraphQLString
+            },
+            emailAddress: {
+                type: GraphQLString
+            }
+        }
+    })
+
+Em uma query GraphQL que pede um objeto de contato, podemos pedir a pessoa associada a esse contato. Já que sabemos que a interface define um nome, podemos sempre pedir isso:
+
+    query ContactQuery($contactId: Int!) {
+        contact(contactId: $contactId) {
+            person {
+                name
+            }
+            phoneNumber
+            emailAddress
+        }
+    }
+
+Dentro do campo person, não podemos pedir diretamente departmentName e companyName porque uma pessoa poderia ter uma dessas propriedades mas não a outra. Entretanto, podemos utilizar inline fragments para pedi-los condicionalmente:
+
+    query ContactQuery($contactId: Int!) {
+        contact(contactId: $contactId) {
+            person {
+                name
+                ... on Employee {
+                    departmentName
+                }
+                ... on Vendor {
+                    companyName
+                }
+            }
+            phoneNumber
+            emailAddress
+        }
+    }
+
+A resposta desta consulta incluirá um departmentName mas não um companyName quando este contato for um funcionário, e incluirá companyName mas não departmentName quando o contato for um fornecedor.
+
+Unions
+
+Quando queremos agrupar dois objetos que não tem nenhum campo em comum em uma certa lógica, um union GraphQL é onde podemos utilizar. Por exemplo, quando estamos modelando um objeto de currículo para funcionários, o currículo terá seções diferentes, e cada seção terá campos diferentes, mas as seções podem ser agrupadas sobre a categoria sessão do currículo.
+Suponha que temos os dois types seguintes em nosso schema:
+
+    // src/graphql/types/EducationType
+    export default new GraphQLObjectType({
+        name: 'Education',
+        fields: () => ({
+            schoolName: {
+                type: GraphQLString
+            },
+            fieldOfStudy: {
+                type: GraphQLString
+            },
+            graduationYear: {
+                type: GraphQLInt
+            }
+        })
+    });
+
+    // src/graphql/types/ExperienceType
+    export default new GraphQLObjectType({
+        name: 'Experience',
+        fields: () => ({
+            companyName: {
+                type: GraphQLString
+            },
+            title: {
+                type: GraphQLString
+            },
+            description: {
+                type: GraphQLString
+            }
+        })
+    });
+
+Podemos utilizar uma union para representar a seção de um currículo que pode ser um education type ou um experience type:
+
+    // src/graphql/unions/ResumeSectionType
+    export default new GraphQLUnionType({
+        name: 'ResumeSection',
+        types: [ExperienceType, EducationType],
+        resolveType(value) {
+            if (value instanceof Experience) {
+                return ExperienceType;
+            }
+            if (value instanceof Education) {
+                return EducationType;
+            }
+        }
+    });
+
+Quando temos um union type em um GraphQL schema, podemos utilizar inline fragments para pedir os campos dos types que a union representa:
+
+    query ResumeInformation {
+        ResumeSection {
+            ... on Education {
+                schoolName
+                fieldOfStudy
+            }
+            ... on Experience {
+                companyName
+                title
+            }
+        }
+    }
+
+Enums
+
+Quando o valor scalar de um campo tiver uma lista de valores possíveis em um conjunto, e só puder ser um desses valores, podemos representar o campo em um GraphQL schema como um ENUM type.
+Por exemplo, o contrato de um empregado puder ser full-time, part-time, ou shift-work. Vamos supor que representamos estes valores em nosso banco de dados com números; o campo contract_type do banco de dados tem uma vrificação em (1, 2, 3). Veja como representamos os valores do type contract na implementação do GraphQL:
+
+    // src/graphql/types/ContractType
+    export default new GraphQLEnumType({
+        name: 'Contract',
+        values: {
+            FULLTIME: {
+                value: 1
+            },
+            PARTTIME: {
+                value: 2
+            },
+            SHIFTWORK: {
+                value: 3
+            }
+        }
+    })
+
+ContractType é um novo type personalizado que podemos agora utilizar em EmployeeType, desta maneira:
+
+    // src/graphql/types/EmployeeType
+    export default new GraphQLObjectType({
+        name: 'Employee',
+        fields: {
+            name: {
+                type: GraphQLString
+            },
+            contractType: ContractType
+        }
+    })
+
+Vamos introduzir outro type - um type department. Para este type, usaremos ContractType para representar a lista de tipos de contrato permitidos em um departamento:
+
+    // src/graphql/types/DepartmentType
+    export default new GraphQLObjectType({
+        name: 'Department',
+        fields: {
+            name: {
+                type: GraphQLString
+            },
+            contractType: GraphQLList(ContractType)
+        }
+    });
+
+Cada departamento terá uma lista de tipos de contrato que pode aceitar.

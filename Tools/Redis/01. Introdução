@@ -1,0 +1,45 @@
+Introdução
+
+O Redis é uma ferramenta de armazenamento de estruturas de dados em memória, utilizado como banco de dados, cache e message broker. Ele fornece estruturas de dados como strings, hashes, lists, sets, sets ordenados com queries de intervalo, bitmaps, hyperloglogs, indíces geoespaciais e streams.
+
+Vantagens
+
+- Excepcionalmente rápido: o Redis é muito rápido e pode executar 110000 operações de escrita por segundo, e aproximadamente 81000 operações de leitura por segundo.
+- Persistência: enquanto todos os dados ficam em memória, as alterações são salvas no disco de maneira assíncrona.
+- Suporte rico de tipos de dados.
+- Atomicidade: todas as operações do Redis são atômicas, o que garante que se dois clients realizarem acessos concorrentes, o servidor Redis receberá o valor atualizado.
+
+Instalação
+
+- A partir do código fonte:
+
+Baixe, extraia e compile o código-fonte do Redis com os seguintes comandos:
+
+	wget https://download.redis.io/releases/redis-6.2.2.tar.gz // Troque o 6.2.2 pela versão mais atualizada
+	tar xzf redis-6.2.2.tar.gz
+	cd redis-6.2.2
+	make
+	
+Os binários que compilados agora estão disponíveis no diretório src. Rode o Redis com:
+
+	src/redis-server
+	
+Agora você consegue interagir com o Redis utilizando o client embutido:
+
+	src/redis-cli
+	
+- A partir do repositório oficial:
+
+	sudo add-apt-repository ppa:redislabs/redis
+	sudo apt-get update
+	sudo apt-get install redis
+	
+- A partir do Docker:
+
+	docker run --name redis-server -d redis
+	
+Conectando a CLI:
+
+	docker run -it --rm redis redis-cli -h <redis-server-container-ip-address> -p <redis-server-container-port>
+	
+O redis-cli, por padrão, se conectará a um servidor no endereço 127.0.0.1 (localhost) e porta 6379. Para alterarmos esses valores, precisamos passar os parâmetros -h onde podemos definir um endereço IP ou host name e -p onde podemos definir uma porta. Ao rodar o servidor no Docker, precisamos informar o endereço IP e a porta do contêiner baseado na rede que ele está conectado.

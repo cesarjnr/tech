@@ -1,0 +1,12 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/media/cesar/a477f989-82c8-430d-8ce8-b3313dc29c791/Tech/DevOps/Linux/09. Cmake/example/main.cpp
+iostream
+-
+

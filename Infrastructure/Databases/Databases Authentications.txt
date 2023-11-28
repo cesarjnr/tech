@@ -1,0 +1,15 @@
+Databases Authentications
+
+Tindev (MongoDB Atlas)
+
+username: cesarjnr
+user password: 2onQcP1F6Czl5khI
+database password: admin
+
+FindDevs (MongoDB Atlas)
+
+username: cesarjnr
+user password: 2onQcP1F6Czl5khI
+
+
+

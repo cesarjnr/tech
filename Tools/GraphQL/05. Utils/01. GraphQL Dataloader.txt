@@ -1,0 +1,129 @@
+GraphQL Dataloader
+
+Dataloader é uma lib desenvolvida pelo Facebook para compartilhamento de informações entre resolvers no GraphQL. Seu objetivo é reduzir as requisições através do cacheamento e compartilhamento de requisições dos dados. Vamos primeiro entender o que o Dataloader veio resolver.
+
+O Problema do N+1 do GraphQL
+
+Digamos que temos um banco de dados de autores e seus livros, uma simples relação "hasMany". Agora, queremos pegar todos os autores, e todos os seus livros. No REST, faríamos uma rota que utiliza um ORM para fazer algo como:
+
+    route: '/authors/books',
+    method: 'GET',
+    handler: async () => ORM.getAuthors().getTheirBooks();
+
+Por baixo dos panos, isso executaria duas consultas: uma para pegar todos os autores, e uma para pegar todos os seus livros. A consulta SQL seria algo como:
+
+    SELECT * FROM authors; // finja que isso retorna 3 autores
+
+    SELECT * FROM books WHERE author_id IN (1, 2, 3);
+
+Feito, já que o ORM pega todos os ids da primeira consulta, combinar todas as relações é fácil com a segunda consulta.
+
+Por Que o GraphQL Tem Problemas com Isto?
+
+No REST, isto funciona apenas porque a segunda consulta já tem uma lista de cada author_id. O GraphQL não funciona dessa maneira já que cada função resolver sabe apenas sobre seu próprio objeto pai. Isso significa que seu ORM não terá mais o luxo de ter uma lista de author_id.
+Então, se  pegarmos a mesma requisição do exemplo acima e colocá-la em uma consulta do GraphQL:
+
+    {
+        query {
+            authors {
+                name
+                books {
+                    title
+                }
+            }
+        }
+    }
+
+A primeira cada poderia ter um resolver que bate no banco uma vez e pega todos os autores, mas é isso. Na próxima camada o resolver books não pode utilizar todos os resultados de uma vez para encontrar os livros. Cada resolver book receberia apenas seu próprio autor pai. Isto significa que seu ORM teria que bater no banco de dados a partir de um resolver de cada vez. Aqui está o código para a versão do GraphQL:
+
+    // UserType
+    export default new GraphQLObjectType({
+        name: 'Author',
+        fields: () => ({
+            id: {
+                type: GraphQLNonNull(GraphQLInt)
+            },
+            name: {
+                type: GraphQLNonNull(GraphQLString)
+            },
+            books: {
+                type: GraphQLNonNull(GraphQLList(GraphQLNonNull(Book))),
+                resolve: async (authorObj, args) => {
+                    const books = await Book.find({ id: authorObj.id })
+
+                    return books;
+                }
+            }
+        })
+    });
+
+    // QueryType
+    export default new GraphQLObjectType({
+        name: 'Query',
+        fields: () => ({
+            authors: {
+                type: GraphQLNonNull(GraphQLList(GraphQLNonNull(Author))),
+                resolve: async () => {
+                    const authors = await Author.find();
+
+                    return authors;
+                }
+            }
+        })
+    });
+
+E isso criaria a seguinte consulta SQL:
+
+    SELECT * FROM authors;
+
+    SELECT * FROM books WHERE author_id = 1;
+
+    SELECT * FROM books WHERE author_id = 2;
+
+    SELECT * FROM books WHERE author_id = 3;
+
+Qual a Solução?
+
+A resposta é o Dataloader. Essencialmente, o que ele faz é esperar por todos os resolvers carregarem em suas chaves individuais. Uma vez que ele as tem, ele bate no banco uma vez com as chaves, e retorna uma promise que é resolvida para um array de valores. Ele agrupa nossas consultas em vez de fazer uma de cada vez.
+
+Batching Processing (Processamento em Lote)
+
+O batching é um método de executar tarefas repetitivas que contenham dados de grande volume. O método batch permite os usuários processarem dados quando recursos computacionais estão disponíveis, e com pouca ou nenhuma interação do usuário.
+Com o batching, os usuários coletam e armazenam dados, e então processam os dados durante um evento conhecido como "batch window". O batching melhora a eficiência definindo prioridades de processamento e completando tarefas com dados no momento que faz mais sentido. Ele agrupa nossas consultas em vez de fazer uma de cada vez.
+
+Utilizando a Biblioteca dataloader
+
+Primeiro, instale a biblioteca:
+
+    yarn add dataloader
+
+Para começar, crie um Dataloader. Cada instância de DataLoader representa um único cache. Tipicamente, as instâncias são criadas por requisição quando utilizadas dentro de um servidor web como express se usuários diferentes puderem ver coisas diferentes.
+Para criarmos loaders, passamos uma função de carregamento em lote (batch) para o construtor de Datalaoder:
+
+    // src/graphql/loaders/ProfileLoader
+
+    const DataLoader = require('dataloader');
+
+    const User = require('../app/models/User');
+
+    const userLoader = new DataLoader(async ids => {
+        const users = await Profile.find({
+            id: {
+                $in: ids
+            }
+        });
+
+        return users;
+    });
+
+A função de carregamento em batch aceita um array de chaves, e retorna uma promise que é resolvida para um array de valores. No exemplo acima, recebemos os ids que queremos utilizar para buscar os dados no banco e retornamos os documentos encontrados no banco baseado nesses ids.
+Então, você pode carregar valores individuais do loader utilizando o método load da instância do Dataloader. O Dataloader unirá todos os carregamentos individuais que ocorrerem dentro de um único frame de execução (um único tique do event loop) e então chamará sua função batch com todas as chaves requisitadas.
+
+    const user = await userLoader.load(1);
+    const invitedBy = await userLoader.load(user.invited_by_id);
+    console.log(`User 1 was invited by ${invitedBy}`);
+
+    // Em outro lugar da aplicação
+    const user = await userLoader.load(2);
+    const lastInvited = await userLoader.load(user.last_invited_id);
+    console.log(`User 2 last invited ${lastInvited}`);

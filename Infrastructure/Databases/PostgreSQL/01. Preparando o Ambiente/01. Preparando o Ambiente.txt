@@ -1,0 +1,96 @@
+Instalação
+
+Veja o passo a passo da instalação do Postgres no Ubuntu:
+
+	sudo apt-get install postgresql-12
+
+Preparando o Ambiente
+
+No procedimento de instalação foi criado um usuário padrão chamado postgres que é associado com o role padrão do Postgres. Para usar o Postgres, podemos fazer login nessa conta.
+Alterne para a conta postgres no seu servidor digitando:
+
+	sudo -i -u postgres psql
+
+Esse comando, além de se autenticar com o usuário postgres, também já entra na linha de comando do postgres, psql.
+
+Vamos agora definir uma senha para o nosso superusuário (postgres) para caso precisarmos dele. Para isso, digite o seguinte comando:
+
+	\password postgres
+
+Você será instruído a inserir duas vezes a nova senha.
+
+Para sair da linha de comando do Postgres, você pode utilizar o comando \q.
+
+Criando um Banco de Dados
+
+Para criar um banco de dados, você pode inserir o seguinte comando:
+
+	CREATE DABATASE database_name;
+
+Onde database_name será substituído pelo nome que você deseja dar ao banco de dados.
+
+Caso você queira listar os banco de dados criados na máquina, digite o seguinte comando:
+
+	\l
+
+Conectando a um Banco de Dados
+
+Para se conectar a um banco de dados, existem duas maneiras.
+A primeira:
+
+	psql -h hostname -p port -U username database_name
+
+onde:
+
+-h username -> substitua hostname pelo host que está hospedando o banco, geralmente um endereço de ip
+-p port -> substitua port pela porta utilizada no banco de dados, geralmente o postgres utiliza a porta 5432
+-U username -> substitua username pelo nome de usuário o qual pertence o banco de dados
+database_name -> o nome do banco de dados
+
+A segunda, já dentro do comando psql:
+
+	\c database_name
+
+O comando \c fará a conexão ao banco de dados informado, que subsitui database_name.
+
+Você também pode simplesmente trocar de banco de dados, digitando \c database_name já com a conexão feita a outro banco de dados.
+
+Excluindo um Banco de Dados
+
+Para excluir um banco de dados, utilize o seguinte comando:
+
+	DROP DATABASE database_name;
+
+Observação: Lembrando que você só deve utilizar a contrabarra (\) se psql já estiver selecionado na linha de comando. Dê sempre preferência para inserir os comandos já dentro do psql, para evitar bugs na linha de comando.
+
+Criando um Novo Usuário
+
+Para criar um novo usuário, conecte-se à instância do Postgres (mas não ao psql) e insira o seguinte comando:
+
+	createuser username --superuser;
+
+O comando acima criará um novo usuário com privilégios de administrador.
+Depois de criado, dê uma senha para esse usuário com os seguintes comandos:
+
+	psql
+	alter user username with encrypted password 'password';
+
+Concedendo Privilégios de uma Base de Dados a Um Usuário Criado
+
+	sudo -i -u postgres
+	psql
+	grant all privileges on database database-name to username;
+
+Listando Usuários
+
+Para listar todos os usuários presentes em uma instância de banco de dados postgres, utilize o seguinte comando:
+
+	\du
+
+Verificando Informações da Conexão
+
+Para verificarmos informações da conexão atual da instância do postgres em um servidor, podemos utilizar o seguinte comando:
+
+	\conninfo
+
+Esse comando exibirá uma mensagem informando a qual banco de dados você está conectado e com qual usuário.

@@ -1,0 +1,25 @@
+Introdução aos Bancos de Dados Não-Relacionais (NoSQL)
+
+NoSQL é um movimento que promove soluções de armazenamento de dados não relacionais. Ele é composto por diversas ferramentas que, de forma particular e específica resolvem problemas como tratamento de grandes volumes de dados, execução de consultas com baixa latência e modelos flexíveis de armazenamento de dados, como documentos XML ou JSON.
+As tecnologias NoSQL não têm como objetivo substituir os bancos de dados relacionais, mas apenas propor algumas soluções que em determinados cenários são mais adequadas. Desta forma, é possível trabalhar com tecnologias NoSQL e bancos de dados relacionais dentro da mesma aplicação.
+Em bancos de dados relacionais como Oracle, MySQL, Postgres, etc., trabalhamos com tabelas e colunas, já os bancos de dados não-relacionais não utilizam estas abordagens.
+
+Em que situação o tema é util?
+
+As ferramentas apresentadas neste tópico são importantes em cenários onde sistemas de banco de dados tradicionais não são suficientes ou adequados às necessidades específicas, tais como: baixa latência, grandes volumes de dados (big data), aplicações web em tempo real, escalabilidade ou estruturas em que as conexões entre os dados são tão importantes quanto o próprio dado. Todas as tecnologias abordadas apresentam situações de uso particulares que podem ser úteis na substituição dos tradicionais bancos de dados relacionais.
+
+O Que é Big Data?
+
+É um termo para conjuntos de dados que são tão grandes que métodos tradicionais de armazenagem e processamento são inadequados.
+O termo ganhou força na última década, por conta do aumento massivo no volume de dados causados pelas redes sociais, motores de busca, etc.
+
+Tipos de Bancos de Dados NoSQL
+
+Cada tecnologia NoSQL apresentada neste tópico tem suas próprias características. O Redis adota o modelo chave-valor, utiliza a memória para alocação de dados e é ideal para utilização de cache. O MongoDB implementa o modelo baseado em documentos, tem foco no tratamento de grandes volumes de dados e é ideal para grande parte das aplicações WEB. Já o Neo4j, uma das ferramentas NoSQL mais maduras, tem o modelo baseado em grafos e seus principais casos de uso estão relacionados a motores de recomendação, análise de rotas geográficas e redes sociais. Por fim, tem-se o Cassandra, que é uma implementação open source do modelo de dados do BigTable com a arquitetura distribuída do Dynamo.
+
+
+
+
+
+
+
