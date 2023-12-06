@@ -14,7 +14,7 @@ So, for example:
 
 ```sh
 name="John"
-echo Hello, ${name}!
+echo "Hello, ${name}!"
 ```
 
 ### Default Value
@@ -24,7 +24,7 @@ We can use the operator `:-` to provide a default value for a variable that is u
 ```sh
 name=
 
-echo Hello, ${name:-unknown}
+echo "Hello, ${name:-unknown}"
 ```
 
 In the example above, if the variable name is empty, the value `uknown` will be used in the expression.
