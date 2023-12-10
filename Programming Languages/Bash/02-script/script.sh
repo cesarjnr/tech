@@ -2,7 +2,7 @@
 
 ## Variables
 
-LANGUAGE=bash
+LANGUAGE="bash"
 
 ## Output
 

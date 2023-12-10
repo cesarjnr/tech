@@ -12,6 +12,8 @@ else
 fi
 ```
 
+> Note that the condition must be between spaces inside the brackets.
+
 The if/elif/else state syntax is:
 
 ```sh
