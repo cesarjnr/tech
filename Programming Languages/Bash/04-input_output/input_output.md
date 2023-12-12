@@ -1,4 +1,22 @@
-## Output/Input Redirection
+## Input/Output
+
+### Input
+
+We can access positional arguments using the `$` sign along with the argument position:
+
+```sh
+#!/usr/bin/bash
+
+echo Hello $1 $2
+```
+
+Then, when we call the script we just pass the arguments in the order we want:
+
+```
+./script.sh Cesar Junior
+```
+
+The strings `Cesar` and `Junior` will be stored in `$1` and `$2` respectively.
 
 ### Output Redirection
 
