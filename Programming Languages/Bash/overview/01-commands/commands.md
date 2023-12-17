@@ -146,14 +146,75 @@ stat -c '%U' filename
 
 ### grep
 
-`grep` searches for patterns in the specified `filename`:
+`grep` searches for patterns in the specified `filename` or command output:
 
 ```
 grep test filename
+```
+
+```
+ps aux | grep 'command'
 ```
 
 When we need to search for an expression with more than one word we need to use single quotes:
 
 ```
 grep 'word1 word2' filename
+```
+
+### awk
+
+`awk` filters out the content of a file or a command output:
+
+```sh
+awk '{print $1}' filename
+```
+
+We pass a string as the first argument representing what we want to display in the command output and the `filename` to filter out the contents. Within the string, we use the keyword `print` followed by whatever we want to print. `awk` will basically look into all lines of the specified `filename` or command output and separate their content in columns, storing these columns within variables in the format `$[number]`. Using the previous example, let's say we have a file text like this:
+
+```
+Hello, Cesar!
+<br/>
+Welcome to the bash world!*
+```
+
+If we use the same command as the example above:
+
+```sh
+awk '{print $1}' hello
+```
+
+We would have the following output:
+
+```
+Hello,
+Welcome
+```
+
+If we use the variable `$2` we would have:
+
+```
+Cesar!
+to
+```
+
+By default, `awk` uses a space as the pattern to separate the columns. We can use the param `-F` to set the separator:
+
+```sh
+awk -F : '{print $1} /etc/passwd
+```
+
+We know that the `passwd` file has the pattern *root:x:0:0:root:/root:/bin/bash* so the above command would return all line words placed before the first `:`.
+We can also use `awk` in a pipping:
+
+```sh
+ps aux | grep 'command' | awk '{print $2}'
+```
+
+The command above uses `px` to list the processes, then pipe them to grep to filter the ones started by `command` and finally pipe them to `awk` to get the `PID` of the process (that we know is the *second column* of the `ps aux` result).
+
+> It's worth mentioning that we can pass whatever we want to the print command. If we want to use some string to improve the result we achieve this by putting the content between double quotes:
+
+```sh
+awk -F : '{print $1 "=>" $7} /etc/passwd
 ```
