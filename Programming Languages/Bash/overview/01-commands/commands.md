@@ -218,3 +218,31 @@ The command above uses `px` to list the processes, then pipe them to grep to fil
 ```sh
 awk -F : '{print $1 "=>" $7} /etc/passwd
 ```
+
+### sed
+
+`sed` allows us to modifiy the contents of the specified `filename`:
+
+```sh
+sed 'pattern' filename
+```
+
+For example, let's say we want to replace the word `Javascript` with `Bash` inside a text file:
+
+```sh
+sed 's/Javascript/Bash/' file.txt
+```
+
+If we wanted to replace all occurrences we can append `g` at the end of the *pattern*:
+
+```sh
+sed 's/Javascript/Bash/g' file.txt
+```
+
+> The `s` at the beginning of the *pattern* represents the mode we want to use. In this case, `s` represents the mode *substitution*.
+
+We can also use `sed` in a pipping:
+
+```sh
+echo 'I can code in Javascript!' | sed 's/Javascript/Bash/'
+```
